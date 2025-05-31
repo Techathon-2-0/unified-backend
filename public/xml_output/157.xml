@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL</Domain_Name>
+      <Shipment_Id>12157298</Shipment_Id>
+      <RouteName>FTL Consignment Trip</RouteName>
+      <Equipment>
+        <Equipment_Id>MH12KP3355</Equipment_Id>
+        <ServiceProviderAliasValue>GOODWILL TRANS AND LOGISTICS CO |100001748</ServiceProviderAliasValue>
+        <DriverName>SANTOSH SANGOLKAR</DriverName>
+        <DriverMobileNo>9730221495</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250523151700</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1322407</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.7632075</Latitude>
+          <Longitude>73.8613203</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250522210000</PlannedDepartureDate>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>12157298</LrNumber>
+              <Customer_ID>SKH M</Customer_ID>
+              <Customer_Name>SKH M INDIA PRIVATE LIMITED</Customer_Name>
+              <Customer_Location>Chakan</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1322555</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>18.7632075</Latitude>
+          <Longitude>73.8613203</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>12157298</LrNumber>
+              <Customer_ID>SKH M</Customer_ID>
+              <Customer_Name>SKH M INDIA PRIVATE LIMITED</Customer_Name>
+              <Customer_Location>Chakan</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

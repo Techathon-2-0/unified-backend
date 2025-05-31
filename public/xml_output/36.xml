@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5289934</Shipment_Id>
+      <RouteName>D | ASOB_A010 &amp; LC10_TRAILER_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>HR45C1471</Equipment_Id>
+        <ServiceProviderAliasValue>DAYAL LOGISTICS |100000870</ServiceProviderAliasValue>
+        <DriverName>Vinoth</DriverName>
+        <DriverMobileNo>8778737696</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250526221900</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300580</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>29.96473</Latitude>
+          <Longitude>78.05378</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250526221900</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1302524</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>30.871611</Latitude>
+          <Longitude>75.9124577</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111383309</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Ludhiana</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>111383310</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Ludhiana</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1302524</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>30.871611</Latitude>
+          <Longitude>75.9124577</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111383309</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Ludhiana</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>111383310</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Ludhiana</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

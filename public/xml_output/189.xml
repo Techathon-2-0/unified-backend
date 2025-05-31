@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5284768</Shipment_Id>
+      <RouteName>D | IUTN_A003_FTL_Normal_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>MH47AS7907</Equipment_Id>
+        <ServiceProviderAliasValue>MITALI TRANSPORT SERVICE |100002682</ServiceProviderAliasValue>
+        <DriverName>PRAHLAD</DriverName>
+        <DriverMobileNo>9161423573</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250524140200</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1313359</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>20.0021122</Latitude>
+          <Longitude>73.7270989</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250524140200</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>Nashik, Maharashtra</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>19.9974533</Latitude>
+          <Longitude>73.7898023</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

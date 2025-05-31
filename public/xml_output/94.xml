@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5286443</Shipment_Id>
+      <RouteName>D | IUTN_A002_FTL_Normal_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>MH12TV6255</Equipment_Id>
+        <ServiceProviderAliasValue>GOODWILL TRANS AND LOGISTICS CO |100001748</ServiceProviderAliasValue>
+        <DriverName>chandrabha</DriverName>
+        <DriverMobileNo>7743965665</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250525093600</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1313358</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>19.2042212</Latitude>
+          <Longitude>72.8672676</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250525093600</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>Kandivali, Maharashtra</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>19.204159</Latitude>
+          <Longitude>72.8516821</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>
