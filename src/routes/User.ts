@@ -15,7 +15,7 @@ const userRouter = express.Router();
 userRouter.get('/users', async (req, res) => {
     //get all users
 
-    const data = await getAllUsers(req, res);
+    const data = await getAllUsers();
     res.send({ message: 'Users fetched successfully', data });
 
 });
