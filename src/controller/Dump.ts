@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/mysql2";
-import { geofencegroup, report, tabs, usertag, usertype, vehiclegroup , vendor } from "../db/schema";
+import { geofencegroup, report, tabs, usertype, vehiclegroup , vendor } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { debug } from "console";
 const utype=['Driver','Customer','consignee','Consignor','Attendant','Admin'];
@@ -39,14 +39,6 @@ export async function insertdumpdata() {
 
                 await db.insert(usertype).values({
                     user_type: ut
-                });
-            }
-        }
-        for(const ut of utag){
-            const d=await db.select().from(usertag).where(eq(usertag.user_tag, ut));
-           if(d.length===0){
-                await db.insert(usertag).values({
-                    user_tag: ut
                 });
             }
         }

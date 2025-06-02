@@ -11,6 +11,9 @@ import EntityRoute from './src/routes/entity';
 import vendorRouter from './src/routes/Vendor';
 import GroupRouter from './src/routes/Group';
 import featureRouter from './src/routes/Feature';
+import customerRouter from './src/routes/customer';
+import GeoFenceRouter from './src/routes/GeoFence';
+
 const app = express()
 const port = 3000
 
@@ -26,6 +29,8 @@ app.use(EntityRoute);
 app.use(vendorRouter);
 app.use(GroupRouter);
 app.use(featureRouter);
+app.use(customerRouter);
+app.use(GeoFenceRouter);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)

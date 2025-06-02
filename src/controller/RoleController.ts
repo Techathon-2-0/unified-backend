@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { drizzle } from "drizzle-orm/mysql2";
 import { report, role, role_report, role_tabs, tabs } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 const db = drizzle(process.env.DATABASE_URL!);
 
@@ -171,7 +171,7 @@ export const updateRole = async (req: Request, res: Response) => {
     }
 
     // Update the role name
-    await db.update(role).set({ role_name:role_name }).where(eq(role.id, id));
+    await db.update(role).set({ role_name:role_name, updated_at: sql`NOW()` }).where(eq(role.id, id));
      const q = await db.select().from(role).where(eq(role.id, id));
     // Clear existing tabs and reports for the role
     await db.delete(role_tabs).where(eq(role_tabs.role_id, id));

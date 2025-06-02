@@ -1,11 +1,52 @@
 import { mysqlTable, varchar, int, timestamp, double,boolean} from 'drizzle-orm/mysql-core';
 
+export const geofence_table = mysqlTable('geofence_table', {
+  id: int().primaryKey().autoincrement(),
+  geofence_name: varchar('geofence_name', { length: 255 }).notNull(),
+  latitude: double('latitude').notNull(),
+  longitude: double('longitude').notNull(),
+  location_id: varchar('location_id', { length: 255 }).notNull(), // for center of geofence
+  tag: varchar('tag', { length: 255 }).notNull().default('tms_api'), // eg a , b , c
+  stop_type: varchar('stop_type', { length: 255 }).notNull().default(''),
+  geofence_type: int('geofence_type').notNull().default(0), //0 for cicrle , 1 for pointer 2 for polygon,
+  radius: int('radius').default(0),
+  status: boolean('status').notNull().default(true), // 1 for active, 0 for inactive
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export const polygon_coordinates = mysqlTable('polygon_coordinates', {
+  id: int().primaryKey().autoincrement(), // Adding primary key
+  geofence_id: int('geofence_id').notNull().references(() => geofence_table.id),
+  latitude: double('latitude').notNull(),
+  longitude: double('longitude').notNull(),
+  corner_points: int('corner_points').notNull().default(0), // Number of corner points in the polygon
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow()
+});
+
+export const geofencegroup = mysqlTable('geofence_group', {
+  id: int().primaryKey().autoincrement(),
+  geo_group: varchar('geo_group', { length: 255 }).notNull().unique(),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export const geofence_group_relation = mysqlTable('geofence_group_relation', {
+  id: int().primaryKey().autoincrement(),
+  geofence_id: int('geofence_id').notNull().references(() => geofence_table.id),
+  group_id: int('group_id').notNull().references(() => geofencegroup.id),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+// geofence trip waale se aata h , i.e sto , we want to soter geofence , tms_api krke store krna h 
+
 export const group = mysqlTable('group', {
   id: int().primaryKey().autoincrement(),
   group_name: varchar('group_name', { length: 255 }).notNull().unique(),
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
-
 });
 
 export const group_entity = mysqlTable('group_entity', {
@@ -28,6 +69,7 @@ export const entity_vendor = mysqlTable('entity_vendor', {
   entity_id: int('entity_id').notNull().references(() => entity.id),
   vendor_id: int('vendor_id').notNull().references(() => vendor.id),
 });
+
 export const vendor = mysqlTable('vendor', {
   id: int().primaryKey().autoincrement(),
   name: varchar('name', { length: 255 }).notNull().unique(),
@@ -36,25 +78,21 @@ export const vendor = mysqlTable('vendor', {
   status: boolean('status').notNull().default(true), // 1 for active, 0 for inactive
 });
 
-//delete  enitity id pr
-
-
 export const usertype= mysqlTable('user_type', {
   id: int().primaryKey().autoincrement(),
   user_type: varchar('user_type', { length: 255 }).notNull().unique(),
 });
-export const usertag = mysqlTable('user_tag', {
-  id: int().primaryKey().autoincrement(),
-  user_tag: varchar('tag', { length: 255 }).notNull().unique(),
-});
+
+// export const usertag = mysqlTable('user_tag', {
+//   id: int().primaryKey().autoincrement(),
+//   user_tag: varchar('tag', { length: 255 }).notNull().unique(),
+// });
+
 export const vehiclegroup = mysqlTable('vehicle_group', {
   id: int().primaryKey().autoincrement(),
   vehicle_group: varchar('vehicle_group', { length: 255 }).notNull().unique(),
 });
-export const geofencegroup = mysqlTable('geofence_group', {
-  id: int().primaryKey().autoincrement(),
-  geo_group: varchar('geo_group', { length: 255 }).notNull().unique(),
-});
+
 
 export const role = mysqlTable('role', {
   id: int().primaryKey().autoincrement(),
@@ -93,6 +131,13 @@ export const usersTable = mysqlTable('users_table', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   active: boolean('active').notNull().default(false), // 1 for active, 0 for inactive
+  tag: varchar('usertag', { length: 255 }).default(''),
+});
+
+export const user_group=mysqlTable('user_group', {
+  id: int().primaryKey().autoincrement(),
+  user_id: int('user_id').references(() => usersTable.id), // Foreign key reference to users_table
+  vehicle_group_id: int('vehicle_group_id').references(() => group.id), // Foreign key reference to vehicle_group table
 });
 
 export const user_role = mysqlTable('user_role', {
@@ -107,11 +152,6 @@ export const user_geofence_group = mysqlTable('user_geofence_group', {
   geofence_group_id: int('geofence_group_id').references(() => geofencegroup.id), // Foreign key reference to geofence_group table
 });
 
-export const user_vehicle_group = mysqlTable('user_vehicle_group', {
-  id: int().primaryKey().autoincrement(),
-  user_id: int('user_id').references(() => usersTable.id), // Foreign key reference to users_table
-  vehicle_group_id: int('vehicle_group_id').references(() => vehiclegroup.id), // Foreign key reference to vehicle_group table
-});
 
 export const user_usertype = mysqlTable('user_usertype', {
   id: int().primaryKey().autoincrement(),
@@ -119,11 +159,11 @@ export const user_usertype = mysqlTable('user_usertype', {
   user_type_id: int('user_type_id').references(() => usertype.id), // Foreign key reference to user_type table
 });
 
-export const user_usertag = mysqlTable('user_usertag', {
-  id: int().primaryKey().autoincrement(),
-  user_id: int('user_id').references(() => usersTable.id), // Foreign key reference to users_table
-  user_tag_id: int('user_tag_id').references(() => usertag.id), // Foreign key reference to user_tag table
-});
+// export const user_usertag = mysqlTable('user_usertag', {
+//   id: int().primaryKey().autoincrement(),
+//   user_id: int('user_id').references(() => usersTable.id), // Foreign key reference to users_table
+//   user_tag_id: int('user_tag_id').references(() => usertag.id), // Foreign key reference to user_tag table
+// });
 
 export const transmission_header = mysqlTable('transmission_header', {
   id: int().primaryKey().autoincrement(),
@@ -214,6 +254,21 @@ export const customer_lr_detail = mysqlTable('customer_lr_detail', {
   stop_id: int('stop_id').references(() => stop.id)
 });
 
+export const customer_group = mysqlTable('customer_group', {
+  id: int().primaryKey().autoincrement(),
+  group_name: varchar('group_name', { length: 255 }).notNull().unique(),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
+export const customer_group_relation = mysqlTable('customer_group_relation', {
+  id: int().primaryKey().autoincrement(),
+  customer_id: int('customer_id').notNull().references(() => customer_lr_detail.id),
+  group_id: int('group_id').notNull().references(() => customer_group.id),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
+});
+
 export const gps_details = mysqlTable('gps_details', {
   id: int().primaryKey().autoincrement(),
   gps_type: varchar('gps_type', { length: 255 }),
@@ -276,3 +331,10 @@ export const gps_schema= mysqlTable('gps_schema', {
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
+
+export const user_customer_group=mysqlTable('user_customer_group',{
+  id: int().primaryKey().autoincrement(),
+  user_id:int('user_id').references(()=>usersTable.id),
+  customer_group_id:int('customer_group_id').references(()=>customer_group.id)
+})
+

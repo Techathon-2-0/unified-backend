@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "1d50497e-1fae-47e2-8e02-dd8204e5f959",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "2ce54b8d-4c60-4e87-b1be-bbc413e626b0",
+  "prevId": "1d50497e-1fae-47e2-8e02-dd8204e5f959",
   "tables": {
     "customer_group": {
       "name": "customer_group",
@@ -2469,7 +2469,7 @@
           "name": "usertag",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
           "default": "''"
         }
