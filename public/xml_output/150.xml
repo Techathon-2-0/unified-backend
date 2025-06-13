@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5280391</Shipment_Id>
+      <RouteName>D | ASOB_A003_TRAILER_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>MH15EG5498</Equipment_Id>
+        <ServiceProviderAliasValue>2X2 LOGISTICS PVT LTD |100006759</ServiceProviderAliasValue>
+        <DriverName>Amar</DriverName>
+        <DriverMobileNo>7693044742</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250524081800</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300582</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>19.9942</Latitude>
+          <Longitude>73.71232</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250524081800</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1301412</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>21.5442868</Latitude>
+          <Longitude>78.7249469</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111379580</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Chhindwara</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1302633</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>21.20545827</Latitude>
+          <Longitude>79.14872674</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111379579</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Nagpur</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

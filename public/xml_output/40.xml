@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5289888</Shipment_Id>
+      <RouteName>D | DDT00059AD-A010</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AF3266</Equipment_Id>
+        <ServiceProviderAliasValue>GOODWILL TRANS AND LOGISTICS CO |100001748</ServiceProviderAliasValue>
+        <DriverName>MAHADEV</DriverName>
+        <DriverMobileNo>9999999990</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250526223800</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1339515</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.520469</Latitude>
+          <Longitude>73.856621</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250526223800</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1265245</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>29.949047</Latitude>
+          <Longitude>78.0646741</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111071251</LrNumber>
+              <Customer_ID>A010</Customer_ID>
+              <Customer_Name>AS HARIDWAR PLANT</Customer_Name>
+              <Customer_Location>Haridwar</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

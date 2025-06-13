@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5279518</Shipment_Id>
+      <RouteName>D | ASOB_CK01_TRAILER_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AJ4467</Equipment_Id>
+        <ServiceProviderAliasValue>ICM LOGISTICS PRIVATE LTD |100006730</ServiceProviderAliasValue>
+        <DriverName>ATUL</DriverName>
+        <DriverMobileNo>9076313435</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250523020900</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300579</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.72801176</Latitude>
+          <Longitude>73.80327702</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250523020900</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1301116</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>28.1721977</Latitude>
+          <Longitude>74.2648829</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111376793</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Bikaner</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1303355</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>29.9045091</Latitude>
+          <Longitude>73.873316</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111376792</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Sri Ganganagar</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

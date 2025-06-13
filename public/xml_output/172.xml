@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5282686</Shipment_Id>
+      <RouteName>D | ASOB_CK01/ETC1_MIXLOAD</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AA5867</Equipment_Id>
+        <ServiceProviderAliasValue>RAOTRANS MOVERS PRIVATE LIMITED |100020383</ServiceProviderAliasValue>
+        <DriverName>RAMESH</DriverName>
+        <DriverMobileNo>6306056946</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250524084900</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300579</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.72801176</Latitude>
+          <Longitude>73.80327702</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250524084900</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1335521</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>18.7632075</Latitude>
+          <Longitude>73.8613203</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250524084900</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1301750</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>28.38</Latitude>
+          <Longitude>77.12</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111379689</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Delhi</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1335800</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>4</StopSequence>
+          <Latitude>28.7206393</Latitude>
+          <Longitude>77.0650472</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111379688</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>New Delhi</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

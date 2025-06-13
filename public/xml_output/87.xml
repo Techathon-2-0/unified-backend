@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5286304</Shipment_Id>
+      <RouteName>D | DM074-BTS1</RouteName>
+      <Equipment>
+        <Equipment_Id>HR55AM9764</Equipment_Id>
+        <ServiceProviderAliasValue>S R ROAD CARRIERS |100000867</ServiceProviderAliasValue>
+        <DriverName>BAWAL</DriverName>
+        <DriverMobileNo>9992226238</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250525015000</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1266621</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>28.0986229</Latitude>
+          <Longitude>76.6008334</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250525015000</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1335978</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>19.974758</Latitude>
+          <Longitude>73.6900328</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111069988</LrNumber>
+              <Customer_ID>A003</Customer_ID>
+              <Customer_Name>AS NASIK PLANT</Customer_Name>
+              <Customer_Location>Nashik</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>
