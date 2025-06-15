@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5284784</Shipment_Id>
+      <RouteName>D | GAT26473B-Haridwar</RouteName>
+      <Equipment>
+        <Equipment_Id>UK08CA9601</Equipment_Id>
+        <ServiceProviderAliasValue>INDIAN PARIVAHAN LOGISTICS |100006836</ServiceProviderAliasValue>
+        <DriverName>Kanwar pal</DriverName>
+        <DriverMobileNo>8755548095</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250525232400</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1334445</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>29.9498376</Latitude>
+          <Longitude>78.0766036</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250525232400</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1317612</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>29.9498376</Latitude>
+          <Longitude>78.0766036</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111069314</LrNumber>
+              <Customer_ID>LC10</Customer_ID>
+              <Customer_Name>LAST MILE MOBILITY HARIDWAR</Customer_Name>
+              <Customer_Location>Haridwar</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1317612</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>29.9498376</Latitude>
+          <Longitude>78.0766036</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111069314</LrNumber>
+              <Customer_ID>LC10</Customer_ID>
+              <Customer_Name>LAST MILE MOBILITY HARIDWAR</Customer_Name>
+              <Customer_Location>Haridwar</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

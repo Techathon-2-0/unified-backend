@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1749927782278,
+      "tag": "0000_luxuriant_the_phantom",
+      "breakpoints": true
+    }
+  ]
+}
