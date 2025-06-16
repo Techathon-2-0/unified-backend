@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5282744</Shipment_Id>
+      <RouteName>D | ASOB_CK01/ETC1_MIXLOAD</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AB9758</Equipment_Id>
+        <ServiceProviderAliasValue>OSL LOGISTICS PRIVATE LIMITED |100007565</ServiceProviderAliasValue>
+        <DriverName>KUNDAN</DriverName>
+        <DriverMobileNo>6291695190</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250524041500</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300579</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.72801176</Latitude>
+          <Longitude>73.80327702</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250524041500</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1335521</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>18.7632075</Latitude>
+          <Longitude>73.8613203</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250524041500</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1301738</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>13.060422</Latitude>
+          <Longitude>80.249583</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111379282</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Chennai</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1335551</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>4</StopSequence>
+          <Latitude>13.0689208</Latitude>
+          <Longitude>80.2671114</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111379283</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Chennai</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

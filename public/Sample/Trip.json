@@ -1,0 +1,365 @@
+[
+  {
+    "Transmission": {
+      "TransmissionHeader": {
+        "UserName": "mahindra",
+        "Password": "MLL@mahindra49",
+        "Token": "1001"
+      },
+      "TransmissionDetails": {
+        "Shipment": {
+          "Domain_Name": "MLL MM OUTBOUND",
+          "Shipment_Id": "M5259490",
+          "RouteName": "D | ASOB_A003_TRAILER_OB",
+          "Equipment": {
+            "Equipment_Id": "NL01AF5630",
+            "ServiceProviderAliasValue": "PALLIA TRANS LOGISTICS PRIVATE LIMITED | 100006726",
+            "DriverName": "RAJU",
+            "DriverMobileNo": "9214184684"
+          },
+          "Events": {
+            "Event": {
+              "EventCode": "TGOPL",
+              "EventDateTime": "20250516001500"
+            }
+          },
+          "Stops": {
+            "Stop": [
+              {
+                "Location_Id": "1300582",
+                "StopType": "P",
+                "StopSequence": "1",
+                "Latitude": "19.9942",
+                "Longitude": "73.71232",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "20250516001500"
+              },
+              {
+                "Location_Id": "1303111",
+                "StopType": "D",
+                "StopSequence": "2",
+                "Latitude": "21.119898",
+                "Longitude": "72.791003",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": [
+                    {
+                      "LrNumber": "111365773",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Surat"
+                    },
+                    {
+                      "LrNumber": "111365780",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Surat"
+                    }
+                  ]
+                }
+              },
+              {
+                "Location_Id": "1303111",
+                "StopType": "D",
+                "StopSequence": "3",
+                "Latitude": "21.119898",
+                "Longitude": "72.791003",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": [
+                    {
+                      "LrNumber": "111365773",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Surat"
+                    },
+                    {
+                      "LrNumber": "111365780",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Surat"
+                    }
+                  ]
+                }
+              },
+              {
+                "Location_Id": "1303184",
+                "StopType": "D",
+                "StopSequence": "4",
+                "Latitude": "21.23308",
+                "Longitude": "72.791054",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": {
+                    "LrNumber": "111365932",
+                    "Customer_ID": "ASOB",
+                    "Customer_Name": "AUTO SECTOR OUTBOUND",
+                    "Customer_Location": "Surat"
+                  }
+                }
+              }
+            ]
+          },
+          "GPSDetails": {
+            "GPSType": "FIXED",
+            "GPSFrequency": "3600",
+            "GPSUnitID": "AXESTRACK",
+            "GPSVendor": "AXESTRACK"
+          }
+        }
+      }
+    }
+  },
+  {
+    "Transmission": {
+      "TransmissionHeader": {
+        "UserName": "mahindra",
+        "Password": "MLL@mahindra49",
+        "Token": "1001"
+      },
+      "TransmissionDetails": {
+        "Shipment": {
+          "Domain_Name": "MLL MM OUTBOUND",
+          "Shipment_Id": "M5259491",
+          "RouteName": "D | ASOB_A004_TRAILER_OB",
+          "Equipment": {
+            "Equipment_Id": "NL01AF5631",
+            "ServiceProviderAliasValue": "PALLIA TRANS LOGISTICS PRIVATE LIMITED | 100006727",
+            "DriverName": "RAHUL",
+            "DriverMobileNo": "9214184685"
+          },
+          "Events": {
+            "Event": {
+              "EventCode": "TGOPL",
+              "EventDateTime": "20250517001500"
+            }
+          },
+          "Stops": {
+            "Stop": [
+              {
+                "Location_Id": "1300583",
+                "StopType": "P",
+                "StopSequence": "1",
+                "Latitude": "19.9943",
+                "Longitude": "73.71233",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "20250517001500"
+              },
+              {
+                "Location_Id": "1303112",
+                "StopType": "D",
+                "StopSequence": "2",
+                "Latitude": "21.119899",
+                "Longitude": "72.791004",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": [
+                    {
+                      "LrNumber": "111365774",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Vadodara"
+                    },
+                    {
+                      "LrNumber": "111365781",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Vadodara"
+                    }
+                  ]
+                }
+              },
+              {
+                "Location_Id": "1303112",
+                "StopType": "D",
+                "StopSequence": "3",
+                "Latitude": "21.119899",
+                "Longitude": "72.791004",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": [
+                    {
+                      "LrNumber": "111365774",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Vadodara"
+                    },
+                    {
+                      "LrNumber": "111365781",
+                      "Customer_ID": "ASOB",
+                      "Customer_Name": "AUTO SECTOR OUTBOUND",
+                      "Customer_Location": "Vadodara"
+                    }
+                  ]
+                }
+              },
+              {
+                "Location_Id": "1303185",
+                "StopType": "D",
+                "StopSequence": "4",
+                "Latitude": "21.23309",
+                "Longitude": "72.791055",
+                "GeoFenceRadius": "5000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": {
+                    "LrNumber": "111365933",
+                    "Customer_ID": "ASOB",
+                    "Customer_Name": "AUTO SECTOR OUTBOUND",
+                    "Customer_Location": "Vadodara"
+                  }
+                }
+              }
+            ]
+          },
+          "GPSDetails": {
+            "GPSType": "FIXED",
+            "GPSFrequency": "3600",
+            "GPSUnitID": "AXESTRACK",
+            "GPSVendor": "AXESTRACK"
+          }
+        }
+      }
+    }
+  },
+  {
+    "Transmission": {
+      "TransmissionHeader": {
+        "UserName": "mahindra",
+        "Password": "MLL@mahindra49",
+        "Token": "1002"
+      },
+      "TransmissionDetails": {
+        "Shipment": {
+          "Domain_Name": "MLL MM INBOUND",
+          "Shipment_Id": "M5259492",
+          "RouteName": "I | ASIB_A005_TRAILER_IB",
+          "Equipment": {
+            "Equipment_Id": "MH12AB1234",
+            "ServiceProviderAliasValue": "XYZ LOGISTICS | 100006728",
+            "DriverName": "",
+            "DriverMobileNo": ""
+          },
+          "Events": {
+            "Event": [
+              {
+                "EventCode": "TSTART",
+                "EventDateTime": "20250518010000"
+              },
+              {
+                "EventCode": "TGOPL",
+                "EventDateTime": "20250518120000"
+              }
+            ]
+          },
+          "Stops": {
+            "Stop": [
+              {
+                "Location_Id": "1300584",
+                "StopType": "P",
+                "StopSequence": "1",
+                "Latitude": "18.5204",
+                "Longitude": "73.8567",
+                "GeoFenceRadius": "3000",
+                "PlannedDepartureDate": "20250518013000"
+              },
+              {
+                "Location_Id": "1303113",
+                "StopType": "D",
+                "StopSequence": "2",
+                "Latitude": "20.5937",
+                "Longitude": "78.9629",
+                "GeoFenceRadius": "4000",
+                "PlannedDepartureDate": "",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": {
+                    "LrNumber": "111365934",
+                    "Customer_ID": "ASIB",
+                    "Customer_Name": "AUTO SECTOR INBOUND",
+                    "Customer_Location": "Nagpur"
+                  }
+                }
+              }
+            ]
+          },
+          "GPSDetails": {
+            "GPSType": "MOBILE",
+            "GPSFrequency": "1800",
+            "GPSUnitID": "VTS001",
+            "GPSVendor": "BLACKBOX"
+          }
+        }
+      }
+    }
+  },
+  {
+    "Transmission": {
+      "TransmissionHeader": {
+        "UserName": "mahindra",
+        "Password": "MLL@mahindra49",
+        "Token": "1003"
+      },
+      "TransmissionDetails": {
+        "Shipment": {
+          "Domain_Name": "MLL EXPRESS",
+          "Shipment_Id": "EXP123456",
+          "RouteName": "E | EXPRESS_ROUTE_XYZ",
+          "Equipment": {
+            "Equipment_Id": "DL03CB4567",
+            "ServiceProviderAliasValue": "FAST TRACK COURIERS | 100006729",
+            "DriverName": "SURESH",
+            "DriverMobileNo": "9876543210"
+          },
+          "Events": {
+            "Event": {
+              "EventCode": "DISPATCHED",
+              "EventDateTime": "20250519100000"
+            }
+          },
+          "Stops": {
+            "Stop": [
+              {
+                "Location_Id": "1300585",
+                "StopType": "L",
+                "StopSequence": "1",
+                "Latitude": "28.6139",
+                "Longitude": "77.2090",
+                "GeoFenceRadius": "2500",
+                "PlannedDepartureDate": "20250519120000"
+              },
+              {
+                "Location_Id": "1300586",
+                "StopType": "D",
+                "StopSequence": "2",
+                "Latitude": "26.9124",
+                "Longitude": "75.7873",
+                "GeoFenceRadius": "3000",
+                "CustomerLRDetails": {
+                  "CustomerLRDetail": [
+                    {
+                      "LrNumber": "EXP001",
+                      "Customer_ID": "EXPRESS",
+                      "Customer_Name": "EXPRESS DELIVERIES",
+                      "Customer_Location": "Jaipur"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "GPSDetails": {
+            "GPSType": "SATELLITE",
+            "GPSFrequency": "600",
+            "GPSUnitID": "SAT01",
+            "GPSVendor": "TRACKGLOBE"
+          }
+        }
+      }
+    }
+  }
+]

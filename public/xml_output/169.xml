@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5282672</Shipment_Id>
+      <RouteName>D | F003 to All India(FTL)</RouteName>
+      <Equipment>
+        <Equipment_Id>MH04DD7518</Equipment_Id>
+        <ServiceProviderAliasValue>BOMBAY GOODS FREIGHT CARRIERS |100000373</ServiceProviderAliasValue>
+        <DriverName>JYOTI PRAKASH YADAV</DriverName>
+        <DriverMobileNo>9792556912</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250522220200</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1265249</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>21.1283924</Latitude>
+          <Longitude>79.00248</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250522220200</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1265249</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>21.1283924</Latitude>
+          <Longitude>79.00248</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL</Domain_Name>
+      <Shipment_Id>M5281810</Shipment_Id>
+      <RouteName>D | Glovis (Chennai) FTL Outbound</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AA5319</Equipment_Id>
+        <ServiceProviderAliasValue>SHRI GANPATI LOGISTICS |100003113</ServiceProviderAliasValue>
+        <DriverName>Ismayil</DriverName>
+        <DriverMobileNo>8053879786</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250523162900</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>152315</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>12.9956257</Latitude>
+          <Longitude>80.0220127</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250523162900</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1307204</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>17.4288853</Latitude>
+          <Longitude>78.3262807</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>S5237571270</LrNumber>
+              <Customer_ID>GLOVIS IND</Customer_ID>
+              <Customer_Name>GLOVIS INDIA PVT LTD</Customer_Name>
+              <Customer_Location>Hyderabad</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1196479</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>17.4308891</Latitude>
+          <Longitude>78.5277464</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>S5243571270</LrNumber>
+              <Customer_ID>GLOVIS IND</Customer_ID>
+              <Customer_Name>GLOVIS INDIA PVT LTD</Customer_Name>
+              <Customer_Location>Secunderabad</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

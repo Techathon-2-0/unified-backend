@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5284661</Shipment_Id>
+      <RouteName>D | IUTN_CK01_FTL_Normal_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AF8617</Equipment_Id>
+        <ServiceProviderAliasValue>GOODWILL TRANS AND LOGISTICS CO |100001748</ServiceProviderAliasValue>
+        <DriverName>LALU</DriverName>
+        <DriverMobileNo>6375527539</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250526065500</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1313363</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.77072</Latitude>
+          <Longitude>73.84702</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250526065500</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>Chakan, Maharashtra</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>18.7602664</Latitude>
+          <Longitude>73.8630346</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

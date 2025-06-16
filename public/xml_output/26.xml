@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5289831</Shipment_Id>
+      <RouteName>D | ASOB_CK01/ETC1_MIXLOAD</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AG4152</Equipment_Id>
+        <ServiceProviderAliasValue>JAINEX PARIWAHAN PRIVATE LIMITED |100006737</ServiceProviderAliasValue>
+        <DriverName>Ramod Yadav</DriverName>
+        <DriverMobileNo>6396533395</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250526212400</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300579</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.72801176</Latitude>
+          <Longitude>73.80327702</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250526212400</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1335521</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>18.7632075</Latitude>
+          <Longitude>73.8613203</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate>20250526212400</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1336191</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>26.389585</Latitude>
+          <Longitude>74.6576091</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111383102</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Ajmer</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1301191</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>4</StopSequence>
+          <Latitude>26.4265792</Latitude>
+          <Longitude>74.6542616</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111383103</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Ajmer</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1301910</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>5</StopSequence>
+          <Latitude>26.8858272</Latitude>
+          <Longitude>76.1551866</Longitude>
+          <GeoFenceRadius>5000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111383104</LrNumber>
+              <Customer_ID>ASOB</Customer_ID>
+              <Customer_Name>AUTO SECTOR OUTBOUND</Customer_Name>
+              <Customer_Location>Jaipur</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

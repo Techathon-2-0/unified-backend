@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL</Domain_Name>
+      <Shipment_Id>12157793</Shipment_Id>
+      <RouteName>FTL Consignment Trip</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AG4898</Equipment_Id>
+        <ServiceProviderAliasValue>SAMVARDHANA MOTHERSON HAMAKYOREX EN |100011832</ServiceProviderAliasValue>
+        <DriverName>Tejpal Dingh</DriverName>
+        <DriverMobileNo>9950318109</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime/>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>153793</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>12.6940052</Latitude>
+          <Longitude>79.9682293</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>12157793</LrNumber>
+              <Customer_ID>BMW INDIA</Customer_ID>
+              <Customer_Name>BMW INDIA PVT LTD</Customer_Name>
+              <Customer_Location>Cochin</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>12157793</LrNumber>
+              <Customer_ID>BMW INDIA</Customer_ID>
+              <Customer_Name>BMW INDIA PVT LTD</Customer_Name>
+              <Customer_Location>Cochin</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>153837</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>9.9558573</Latitude>
+          <Longitude>76.2518629</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>12157793</LrNumber>
+              <Customer_ID>BMW INDIA</Customer_ID>
+              <Customer_Name>BMW INDIA PVT LTD</Customer_Name>
+              <Customer_Location>Cochin</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>12157793</LrNumber>
+              <Customer_ID>BMW INDIA</Customer_ID>
+              <Customer_Name>BMW INDIA PVT LTD</Customer_Name>
+              <Customer_Location>Cochin</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

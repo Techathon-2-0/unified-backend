@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>logistics_user</UserName>
+    <Password>SecurePass!987</Password>
+    <Token>2025TOKEN45</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND 2.0</Domain_Name>
+      <Shipment_Id>M6328591</Shipment_Id>
+      <RouteName>D | TATA_A001_TRAILER_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>MH12DE1234</Equipment_Id>
+        <ServiceProviderAliasValue>ABC LOGISTICS PRIVATE LIMITED |100009999</ServiceProviderAliasValue>
+        <DriverName>VIKRAM SINGH</DriverName>
+        <DriverMobileNo>9876543210</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>ARRIVAL</EventCode>
+          <EventDateTime>20250525120000</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1400456</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>18.5204</Latitude>
+          <Longitude>73.8567</Longitude>
+          <GeoFenceRadius>3000</GeoFenceRadius>
+          <PlannedDepartureDate>20250525130000</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1400789</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>19.0760</Latitude>
+          <Longitude>72.8777</Longitude>
+          <GeoFenceRadius>3000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>222456789</LrNumber>
+              <Customer_ID>TATA</Customer_ID>
+              <Customer_Name>TATA MOTORS LTD</Customer_Name>
+              <Customer_Location>Mumbai</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>222456790</LrNumber>
+              <Customer_ID>TATA</Customer_ID>
+              <Customer_Name>TATA MOTORS LTD</Customer_Name>
+              <Customer_Location>Mumbai</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1400789</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>19.0760</Latitude>
+          <Longitude>72.8777</Longitude>
+          <GeoFenceRadius>3000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>222456789</LrNumber>
+              <Customer_ID>TATA</Customer_ID>
+              <Customer_Name>TATA MOTORS LTD</Customer_Name>
+              <Customer_Location>Mumbai</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>222456790</LrNumber>
+              <Customer_ID>TATA</Customer_ID>
+              <Customer_Name>TATA MOTORS LTD</Customer_Name>
+              <Customer_Location>Mumbai</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1400999</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>4</StopSequence>
+          <Latitude>22.7196</Latitude>
+          <Longitude>75.8577</Longitude>
+          <GeoFenceRadius>3000</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>222456891</LrNumber>
+              <Customer_ID>TATA</Customer_ID>
+              <Customer_Name>TATA MOTORS LTD</Customer_Name>
+              <Customer_Location>Indore</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>MOBILE</GPSType>
+        <GPSFrequency>1800</GPSFrequency>
+        <GPSUnitID>TRACEMASTER-999</GPSUnitID>
+        <GPSVendor>TRACEMASTER</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

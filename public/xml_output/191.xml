@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5284789</Shipment_Id>
+      <RouteName>D | SD_FSPB_TRAILER_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>PB65AU6467</Equipment_Id>
+        <ServiceProviderAliasValue>MCI ROADLINES |100002917</ServiceProviderAliasValue>
+        <DriverName>AMIT SATPUTE</DriverName>
+        <DriverMobileNo>9999999999</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250524145900</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300666</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>30.72207</Latitude>
+          <Longitude>76.70887</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate>20250524145900</PlannedDepartureDate>
+        </Stop>
+        <Stop>
+          <Location_Id>1305495</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>29.59106</Latitude>
+          <Longitude>76.12894</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111380507</LrNumber>
+              <Customer_ID>SDOB</Customer_ID>
+              <Customer_Name>SWARAJ DIVISION</Customer_Name>
+              <Customer_Location>Narwana</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1305491</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>28.63257</Latitude>
+          <Longitude>76.76426</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111380506</LrNumber>
+              <Customer_ID>SDOB</Customer_ID>
+              <Customer_Name>SWARAJ DIVISION</Customer_Name>
+              <Customer_Location>Jhajjar</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1312897</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>4</StopSequence>
+          <Latitude>28.2621924</Latitude>
+          <Longitude>76.5719414</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111380505</LrNumber>
+              <Customer_ID>SDOB</Customer_ID>
+              <Customer_Name>SWARAJ DIVISION</Customer_Name>
+              <Customer_Location>Rewari</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

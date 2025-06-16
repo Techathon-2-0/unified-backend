@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL MM OUTBOUND</Domain_Name>
+      <Shipment_Id>M5290809</Shipment_Id>
+      <RouteName>D | SD_FSPB_TRAILER_OB</RouteName>
+      <Equipment>
+        <Equipment_Id>RJ14GK3326</Equipment_Id>
+        <ServiceProviderAliasValue>KHAITAN LOGISTICS PRIVATE LIMITED |100006799</ServiceProviderAliasValue>
+        <DriverName>Muratali</DriverName>
+        <DriverMobileNo>9650632761</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime/>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1300666</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>30.72207</Latitude>
+          <Longitude>76.70887</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+        <Stop>
+          <Location_Id>1336953</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>22.966611</Latitude>
+          <Longitude>72.6919814</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111384181</LrNumber>
+              <Customer_ID>SDOB</Customer_ID>
+              <Customer_Name>SWARAJ DIVISION</Customer_Name>
+              <Customer_Location>Ahmedabad</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

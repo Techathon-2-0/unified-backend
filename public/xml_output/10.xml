@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL_MM</Domain_Name>
+      <Shipment_Id>M5290790</Shipment_Id>
+      <RouteName>D | LC10 &amp; A010 to any supplier</RouteName>
+      <Equipment>
+        <Equipment_Id>MH12UM5810</Equipment_Id>
+        <ServiceProviderAliasValue>GOODWILL TRANS AND LOGISTICS CO |100001748</ServiceProviderAliasValue>
+        <DriverName>ARVIND</DriverName>
+        <DriverMobileNo>8126033706</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime>20250527090239</EventDateTime>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>1312725</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>29.9670617</Latitude>
+          <Longitude>78.0595765</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+        <Stop>
+          <Location_Id>1265245</Location_Id>
+          <StopType>H</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>29.949047</Latitude>
+          <Longitude>78.0646741</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+        <Stop>
+          <Location_Id>1339327</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>19.948833</Latitude>
+          <Longitude>73.7354573</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>111071544</LrNumber>
+              <Customer_ID>A010</Customer_ID>
+              <Customer_Name>AS HARIDWAR PLANT</Customer_Name>
+              <Customer_Location>Nashik</Customer_Location>
+            </CustomerLRDetail>
+            <CustomerLRDetail>
+              <LrNumber>111071545</LrNumber>
+              <Customer_ID>LC10</Customer_ID>
+              <Customer_Name>LAST MILE MOBILITY HARIDWAR</Customer_Name>
+              <Customer_Location>Nashik</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>

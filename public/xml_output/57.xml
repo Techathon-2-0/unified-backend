@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<Transmission>
+  <TransmissionHeader>
+    <UserName>mahindra</UserName>
+    <Password>MLL@mahindra49</Password>
+    <Token>1001</Token>
+  </TransmissionHeader>
+  <TransmissionDetails>
+    <Shipment>
+      <Domain_Name>MLL</Domain_Name>
+      <Shipment_Id>M5289236</Shipment_Id>
+      <RouteName>D | Volvo Bengaluru FTL (Outbound)</RouteName>
+      <Equipment>
+        <Equipment_Id>NL01AA8538</Equipment_Id>
+        <ServiceProviderAliasValue>GANPATI CARRYING CORPORATION |100002287</ServiceProviderAliasValue>
+        <DriverName>MANISH</DriverName>
+        <DriverMobileNo>9817297180</DriverMobileNo>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>TGOPL</EventCode>
+          <EventDateTime/>
+        </Event>
+      </Events>
+      <Stops>
+        <Stop>
+          <Location_Id>820212</Location_Id>
+          <StopType>P</StopType>
+          <StopSequence>1</StopSequence>
+          <Latitude>13.0692593</Latitude>
+          <Longitude>77.7982428</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+        </Stop>
+        <Stop>
+          <Location_Id>1227863</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>2</StopSequence>
+          <Latitude>23.0004971</Latitude>
+          <Longitude>72.4998694</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>12160002</LrNumber>
+              <Customer_ID>VOLVO AUTO</Customer_ID>
+              <Customer_Name>VOLVO AUTO INDIA PRIVATE LIMITED</Customer_Name>
+              <Customer_Location>Ahmedabad</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+        <Stop>
+          <Location_Id>1028264</Location_Id>
+          <StopType>D</StopType>
+          <StopSequence>3</StopSequence>
+          <Latitude>18.9468173</Latitude>
+          <Longitude>73.1793523</Longitude>
+          <GeoFenceRadius>500</GeoFenceRadius>
+          <PlannedDepartureDate/>
+          <CustomerLRDetails>
+            <CustomerLRDetail>
+              <LrNumber>12159999</LrNumber>
+              <Customer_ID>VOLVO AUTO</Customer_ID>
+              <Customer_Name>VOLVO AUTO INDIA PRIVATE LIMITED</Customer_Name>
+              <Customer_Location>Mumbai</Customer_Location>
+            </CustomerLRDetail>
+          </CustomerLRDetails>
+        </Stop>
+      </Stops>
+      <GPSDetails>
+        <GPSType>FIXED</GPSType>
+        <GPSFrequency>3600</GPSFrequency>
+        <GPSUnitID>GTROPY</GPSUnitID>
+        <GPSVendor>GTROPY</GPSVendor>
+      </GPSDetails>
+    </Shipment>
+  </TransmissionDetails>
+</Transmission>
