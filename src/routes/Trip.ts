@@ -77,10 +77,10 @@ TRIPRouter.get('/trip/:id', async (req: Request, res: Response): Promise<void> =
 
 TRIPRouter.post('/trip', async (req: Request, res: Response): Promise<void> => {
     try {
-        // const xmlData = req.body; // Assuming XML data is sent in the request body as 'xml'
+        const xmlData = req.body; // Assuming XML data is sent in the request body as 'xml'
         // console.log('Received trip data:', tripData);
         // const data=await readTripXMLData("1.xml");
-        // console.log(xmlData);
+        console.log(xmlData);
 
         // console.log('Parsed trip data:', data);
         const newTrip = await insertData(req.body.Transmission);

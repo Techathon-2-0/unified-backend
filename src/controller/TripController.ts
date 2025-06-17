@@ -4,11 +4,13 @@ import {
     shipment, equipment, group, group_entity, user_group, entity, entity_vendor, vendor, 
     event, stop, customer_lr_detail, gps_details, transmission_header, customers,
     geofence_table, user_customer_group, customer_group_relation, gps_schema, alert_shipment_relation, alert,
-    intutrack_relation
+    intutrack_relation,usersTable,
 } from '../db/schema';
+
 import {ne, eq, inArray, and, gte, lt, desc, sql  } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { formatDate, reverseGeocode, haversine } from "../utilities/geofunc";
+import bcrypt from "bcryptjs";
 // import haversine from 'haversine-distance'; // You can use any haversine implementation
 
 const db = drizzle(process.env.DATABASE_URL!);
@@ -804,6 +806,20 @@ export async function insertData(data: any) {
     if(dt.length > 0){
         // console.log("Shipment already exists with ID:", data.TransmissionDetails.Shipment.Shipment_Id);
         return { message: "Shipment already exists" };
+    }
+    //if user is authaticated then only insert the data
+    console.log(data);
+    const user = await db.select().from(usersTable).where(eq(usersTable.username, data.TransmissionHeader.UserName)).limit(1);
+    // console.log("User found:", user);
+    if(user.length === 0||data.TransmissionHeader.UserName!== user[0].username){
+        console.log("User not found:", data.TransmissionHeader.UserName);
+        return { message: "User not found" };
+    } 
+
+    const authticated=bcrypt.compareSync(data.TransmissionHeader.Password, user[0].password);
+
+    if(!authticated){
+        return { message: "User not authenticated" };
     }
     
     const transmissionHeader = data.TransmissionHeader;

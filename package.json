@@ -4,7 +4,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
+    "studio": "drizzle-kit studio --config=src/drizzle.config.ts",
     "all": "npm run db:generate && npm run db:migrate && npm run migrate:indexes",
     "test:gps": "ts-node src/controller/Gpsfetcher.test.ts",
     "test": "jest",
@@ -31,6 +31,7 @@
     "kafkajs": "^2.2.4",
     "moment-timezone": "^0.6.0",
     "mysql2": "^3.14.1",
+    "sso-interceptor": "^1.0.8",
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
