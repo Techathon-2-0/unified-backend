@@ -34,9 +34,9 @@ app.use(bodyParser.xml({
   }
 }));
 
-app.use(cors());
+// app.use(cors());
 const allowedOrigins = [
-  'http://localhost:3005', // Local dev
+  'http://localhost:5173', // Local dev
   'https://unifiedgps.mlldev.com',
 ]
 
@@ -56,7 +56,7 @@ app.use(cookieParser());
 // }));
 
 app.use(express.json());
-app.use(cookieParser());
+// app.use(cookieParser());
 app.use(testingRouter);
 app.use(liveRouter);
 app.use(TRIPRouter);

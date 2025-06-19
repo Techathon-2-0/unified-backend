@@ -307,8 +307,8 @@ export async function insertGpsData(d: any) {
 
       gpsRecordsToInsert.push({
         trailerNumber: v.trailerNumber,
-        timestamp: v.timestamp,
-        gpstimestamp: v.gpstimestamp,
+        timestamp: max(v.gpstimestamp,v.gprstimestamp),
+        gpstimestamp: v.timestamp,
         gprstimestamp: v.gprstimestamp,
         longitude: v.longitude,
         latitude: v.latitude,
@@ -349,4 +349,13 @@ export async function fetchGpsDataByTrailerNumber(trailerNumber: string) {
         console.error("Error fetching GPS data:", error);
         throw error;
     }
+}
+function max(a: any, b: any) {
+  // Try to convert both to numbers, fallback to 0 if NaN
+  const numA = Number(a);
+  const numB = Number(b);
+  if (isNaN(numA) && isNaN(numB)) return 0;
+  if (isNaN(numA)) return numB;
+  if (isNaN(numB)) return numA;
+  return numA > numB ? numA : numB;
 }

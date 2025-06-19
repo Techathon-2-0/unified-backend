@@ -29,8 +29,11 @@ GroupRouter.get("/groups/search", async (req, res) => {
 GroupRouter.get("/groups", async (req, res) => {
     try {
         // Assuming you have a function to get all groups
+        // console.log("Fetching all groups");
         const data = await getAllGroups(req, res);
+        // console.log(data);
         res.status(200).json({ message: "Groups fetched successfully", data });
+        res.status(200).json({ message: "Groups fetched successfully" });
     } catch (error) {
         console.error("Error fetching groups:", error);
         res.status(500).json({ message: "Internal server error", error: error });

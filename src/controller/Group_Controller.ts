@@ -91,8 +91,20 @@ export async function createGroup(req: Request, res: Response) {
 //working
 export async function getAllGroups(req: Request, res: Response) {
     try {
-        const groups = await db.select().from(group);
-        
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Get total count for pagination info
+        const [{ count }] = await db.select({ count: sql`COUNT(*)` }).from(group);
+
+        // Fetch paginated groups
+        const groups = await db
+            .select()
+            .from(group)
+            .limit(limit)
+            .offset(offset);
+
         // For each group, get its entities
         const groupsWithEntities = await Promise.all(
             groups.map(async (grp) => {
@@ -116,7 +128,13 @@ export async function getAllGroups(req: Request, res: Response) {
         
         res.status(200).json({
             success: true,
-            data: groupsWithEntities
+            data: groupsWithEntities,
+            pagination: {
+                page,
+                limit,
+                total: Number(count),
+                totalPages: Math.ceil(Number(count) / limit)
+            }
         });
         
     } catch (error) {
@@ -178,6 +196,7 @@ export async function getGroupById(req: Request, res: Response) {
 //working
 export async function searchGroups(req: Request, res: Response) {
     try {
+        
         const searchQuery = req.query.query as string;
         
         if (!searchQuery) {
