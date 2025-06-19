@@ -34,26 +34,26 @@ app.use(bodyParser.xml({
   }
 }));
 
-// app.use(cors());
-// const allowedOrigins = [
-//   'http://localhost:3005', // Local dev
-//   'https://unifiedgps.mlldev.com',
-// ]
+app.use(cors());
+const allowedOrigins = [
+  'http://localhost:3005', // Local dev
+  'https://unifiedgps.mlldev.com',
+]
 
-// const corsOptions = {
-//   origin: allowedOrigins,
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   credentials: true
-// };
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+};
 
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 // app.options('*', cors(corsOptions));
 app.use(cookieParser());
 
-app.use(cors({
-  origin: "*",
-  credentials: true,
-}));
+// app.use(cors({
+//   origin: "*",
+//   credentials: true,
+// }));
 
 app.use(express.json());
 app.use(cookieParser());

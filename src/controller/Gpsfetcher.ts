@@ -86,13 +86,14 @@ async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
 export async function insertGpsData(d: any) {
   try {
     // 1. Flatten data
-    const data = JSON.parse(d.toString())
-    const flatData = data.flat();
+    // const data = JSON.parse(d.toString())
+    // const flatData = data.flat();
     
-    if (flatData.length === 0) {
-      console.log('⚠️ No GPS data to insert.');
-      return;
-    }
+    // if (flatData.length === 0) {
+    //   console.log('⚠️ No GPS data to insert.');
+    //   return;
+    // }
+    const flatData = d;
 
     const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
     const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
