@@ -27,8 +27,19 @@ bodyParserXml(bodyParser);
 
 const app = express()
 const port = process.env.PORT!;
+const allowedOrigins = [
+  'http://localhost:3005',
+  'https://unifiedgps.mlldev.com'
+]
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET','PUT','OPTIONS','POST','DELETE'],
+  credentials: true, // Allow cookies to be sent
 
+};
 app.use(cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Pre-flight request handling
 app.use(bodyParser.xml({
   limit: '1MB',   // Limit payload size
   xmlParseOptions: {
