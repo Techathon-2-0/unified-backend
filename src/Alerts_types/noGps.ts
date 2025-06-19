@@ -1,8 +1,8 @@
-
 import { drizzle } from "drizzle-orm/mysql2";
 import { eq , and, sql ,  gte} from "drizzle-orm";
 // import { alarm } from "../db/schema";
 import { gps_schema , alarm , entity , group , group_entity , alarm_alert , alarm_customer_group , alarm_email , alarm_geofence_group , alarm_group , alert , alert_shipment_relation , geofence_group_relation , geofence_table ,  stop , equipment} from "../db/schema";
+import { sendAlertEmail } from "../services/email";
 
 const db = drizzle(process.env.DATABASE_URL!);
 
@@ -64,17 +64,17 @@ export async function processNoGPSFeedAlerts() {
             
             // Check if time since last update exceeds threshold
             if (timeSinceLastUpdateMinutes >= thresholdMinutes) {
-              await createNoGpsFeedAlert(alarmConfig.id, vehicle.vehicleNumber, timeSinceLastUpdateMinutes);
+              await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, timeSinceLastUpdateMinutes);
             } else {
-              await deactivateNoGpsFeedAlert(alarmConfig.id, vehicle.vehicleNumber);
+              await deactivateNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber);
             }
           } else {
             // No valid timestamp, treat as no GPS data
-            await createNoGpsFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes);
+            await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes);
           }
         } else {
           // No GPS data at all for this vehicle
-          await createNoGpsFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes);
+          await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes);
         }
       }
     }
@@ -85,22 +85,8 @@ export async function processNoGPSFeedAlerts() {
 }
 
 // Helper function to create no GPS feed alert
-async function createNoGpsFeedAlert(alarmId: number, vehicleNumber: string, timeWithoutUpdateMinutes: number) {
+async function createNoGPSFeedAlert(alarmId: number, vehicleNumber: string, timeWithoutUpdateMinutes: number) {
   try {
-    // Check if there's already an active alert for this vehicle and alarm
-    const existingAlert = await db
-      .select()
-      .from(alert)
-      .innerJoin(alarm_alert, eq(alert.id, alarm_alert.alert_id))
-      .where(
-        and(
-          eq(alarm_alert.alarm_id, alarmId),
-          eq(alert.status, 1) // Active alert
-        )
-      )
-      .limit(1);
-    
-    if (existingAlert.length === 0) {
       // Insert new alert
       const [newAlert] = await db
         .insert(alert)
@@ -135,9 +121,15 @@ async function createNoGpsFeedAlert(alarmId: number, vehicleNumber: string, time
             shipment_id: vehicleShipment[0].shipmentId
           });
       }
-      
-      // Here you would add code to send SMS/email notifications
-    }
+          try {
+        const hoursWithoutUpdate = Math.floor(timeWithoutUpdateMinutes / 60);
+        const remainingMinutes = Math.floor(timeWithoutUpdateMinutes % 60);
+        const additionalInfo = `GPS Signal Lost Duration: ${hoursWithoutUpdate} hours ${remainingMinutes} minutes\nLast GPS update: ${hoursWithoutUpdate > 0 ? `${hoursWithoutUpdate}h ${remainingMinutes}m` : `${Math.floor(timeWithoutUpdateMinutes)}m`} ago`;
+        await sendAlertEmail(newAlert.id, vehicleNumber, additionalInfo);
+      } catch (emailError) {
+        console.error("❌ Failed to send alert email, but alert was created:", emailError);
+        // Don't throw error as alert creation was successful
+      }
   } catch (error) {
     console.error("Error creating no GPS feed alert:", error);
     throw error;
@@ -145,7 +137,7 @@ async function createNoGpsFeedAlert(alarmId: number, vehicleNumber: string, time
 }
 
 // Helper function to deactivate no GPS feed alert
-async function deactivateNoGpsFeedAlert(alarmId: number, vehicleNumber: string) {
+async function deactivateNoGPSFeedAlert(alarmId: number, vehicleNumber: string) {
   try {
     // Find active alert for this vehicle and alarm
     const activeAlert = await db

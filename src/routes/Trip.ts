@@ -117,10 +117,10 @@ TRIPRouter.post('/inserttrip', async (req: Request, res: Response): Promise<void
 TRIPRouter.post('/trip/delivery', async (req: Request, res: Response): Promise<void> => {
     try {
         const trip = req.body;
-        // console.log(trip.);
-        const data = await getTripEnd(trip.Transmission.TransmissionDetails.Shipment.Shipment_Id);
+        // console.log(trip);
+        const data = await getTripEnd(trip);
         res.status(200).json(data);
-        res.status(200).json({ message: 'Trip delivery data received successfully' });
+        // res.status(200).json({ message: 'Trip delivery data received successfully' });
     } catch (err) {
         console.error('Error fetching trip end data:', err);
         res.status(500).send({ error: 'Internal Server Error' });

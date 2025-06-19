@@ -24,7 +24,7 @@ export function haversine(lat1: number, lon1: number, lat2: number, lon2: number
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-    return R * c;
+    return R * c/1000;
 }
 
 
@@ -93,27 +93,35 @@ export const formatDate = (dateString?: string) => {
 
   export async function reverseGeocode(lat: number, lon: number): Promise<string> {
     try{
-      return "";
-      const reponse=await axios.get(`${process.env.REVERSE_PROXY_URL}&lat=${lat}&lon=${lon}&format=json`);
-      if(!reponse.data || !reponse.data.display_name) {
-        return 'Address not found';
+      if(!lat || !lon) {
+        return 'Invalid coordinates';
       }
-      const address = reponse.data.address;
+   const rep = await axios.get(`https://api.olamaps.io/places/v1/reverse-geocode?latlng=${lat},${lon}&api_key=${process.env.OLA_API_KEY}`);
+// console.log(rep.data.results[0].formatted_address);
 
-    const parts = [
-      address.house_number,
-      address.road,
-      address.suburb || address.quarter,
-      address.city || address.town || address.village,
-      address.state_district,
-      address.state,
-      address.postcode,
-      address.country
-    ];
-    //set a delay of 500ms 
-    await new Promise(resolve => setTimeout(resolve, 600));
-    const formattedAddress = parts.filter(Boolean).join(', ');
-    return formattedAddress || 'Address not found';
+    // const data = await rep.json();
+    // console.log(rep.results);
+    return rep.data.results[0].formatted_address;
+    //   const reponse=await axios.get(`${process.env.REVERSE_PROXY_URL}&lat=${lat}&lon=${lon}&format=json`);
+    //   if(!reponse.data || !reponse.data.display_name) {
+    //     return 'Address not found';
+    //   }
+    //   const address = reponse.data.address;
+
+    // const parts = [
+    //   address.house_number,
+    //   address.road,
+    //   address.suburb || address.quarter,
+    //   address.city || address.town || address.village,
+    //   address.state_district,
+    //   address.state,
+    //   address.postcode,
+    //   address.country
+    // ];
+    // //set a delay of 500ms 
+    // await new Promise(resolve => setTimeout(resolve, 600));
+    // const formattedAddress = parts.filter(Boolean).join(', ');
+    // return formattedAddress || 'Address not found';
     }catch (error) {
       console.error('Error in reverse geocoding:', error);
       return 'Error retrieving address';

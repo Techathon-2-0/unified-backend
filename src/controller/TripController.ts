@@ -230,7 +230,7 @@ export async function getAllTrips(
     
     if (!status || status === 'active') {
       // Active means all statuses except inactive
-      statusFilter = ['intransit', 'delivery', 'pickup', 'Active']; // Note: keeping 'Active' for backward compatibility
+      statusFilter = ['in_transit', 'delivery', 'pickup', 'Active']; // Note: keeping 'Active' for backward compatibility
     } else if (status === 'inactive') {
       statusFilter = ['inactive', 'Inactive'];
     } else if (status === 'all') {
@@ -533,7 +533,9 @@ export async function getAllTrips(
         const gpsDetailsRow = gpsDetailsMap.get(s.id);
         const gpsDetails = {
           gps_vendor: gpsDetailsRow?.gps_vendor ?? "",
-          gps_frequency: gpsDetailsRow?.gps_frequency != null ? String(gpsDetailsRow.gps_frequency) : ""
+          gps_frequency: gpsDetailsRow?.gps_frequency != null ? String(gpsDetailsRow.gps_frequency) : "",
+          gps_type: gpsDetailsRow?.gps_type ?? "",
+          gps_unit_id: gpsDetailsRow?.gps_unit_id ?? ""
         };
 
 
@@ -543,19 +545,21 @@ export async function getAllTrips(
         let current_location_coordinates: [number, number] | null = null;
         let last_gps_ping = "";
         let vehicle_status = "No Data";
+        let last_gps_vendor="";
         // console.log("Fetching latest GPS data for vehicle:", equip?.equipment_id);
         const latestGps = gpsMap.get(equip?.equipment_id ?? "");
         // console.log("Latest GPS data:", latestGps);
         if (latestGps && latestGps.latitude != null && latestGps.longitude != null) {
-          console.log("Latest GPS data found:", latestGps);
+          // console.log("Latest GPS data found:", latestGps);
           current_location_coordinates = [Number(latestGps.latitude), Number(latestGps.longitude)];
           try {
-            current_location_address = await reverseGeocode(Number(latestGps.latitude), Number(latestGps.longitude));
+
           } catch {
             current_location_address = "";
           }
-
-          last_gps_ping=latestGps.timestamp ? formatDate(new Date(Number(latestGps.timestamp)).toISOString()) : latestGps.timestamp || "";
+          // last_gps_ping=latestGps.timestamp;
+          last_gps_ping=latestGps.timestamp ? formatDate(new Date(Number(latestGps.timestamp)*1000).toISOString()) : latestGps.timestamp || "";
+          last_gps_vendor = latestGps.GPSVendor ||  "";
           if (latestGps.timestamp) {
             const now = Date.now();
             const pingTime = new Date(latestGps.timestamp).getTime();
@@ -589,6 +593,7 @@ export async function getAllTrips(
           else if (stop.entry_time) status = "In Progress";
 
           let detention_time = "";
+          let gname="";
           if (stop.entry_time && stop.exit_time) {
             const entry = new Date(stop.entry_time).getTime();
             const exit = new Date(stop.exit_time).getTime();
@@ -605,10 +610,14 @@ export async function getAllTrips(
           // console.log(latestGps);
           if (stop.entry_time && stop.exit_time) {
             stop.ceta = "0";
-            status = "delivered";
+            status = "completed";
             const entryTimeMs = new Date(stop.entry_time).getTime();
             const exitTimeMs = new Date(stop.exit_time).getTime();
-            stop.detention_time = String(exitTimeMs - entryTimeMs - 2);
+            const loadingtime = stop.location_id != null
+              ? await db.select().from(geofence_table).where(eq(geofence_table.location_id, stop.location_id)).limit(1)
+              : [];
+            stop.detention_time = String(exitTimeMs - entryTimeMs - (Number(loadingtime[0]?.time || 1)));
+            gname= loadingtime[0]?.geofence_name || "";
           } else {
             
             // Calculate ceta as ETA from current location to stop (in minutes)
@@ -619,7 +628,8 @@ export async function getAllTrips(
                 Number(stop.latitude),
                 Number(stop.longitude)
               );
-              const cetaMinutes = Math.round((distance / avgSpeedKmh) * 60);
+              // console.log("Distance to stop:", distance, "km");
+              const cetaMinutes = (Math.round(distance / avgSpeedKmh)); // Convert hours to minutes
               stop.ceta = cetaMinutes.toString();
 
               // Calculate expected arrival time
@@ -664,7 +674,8 @@ export async function getAllTrips(
             actual_sequence: stop.actual_sequence || 0,
             ceta: stop.ceta || "",
             geta: "0",
-            detention_time
+            detention_time,
+            geofence_name: gname || "",
           };
         }));
 
@@ -704,13 +715,9 @@ export async function getAllTrips(
           .filter(st => st.latitude && st.longitude)
           .map(st => ({ latitude: Number(st.latitude), longitude: Number(st.longitude) }));
 
-        let ceta = "";
-        if (stopsForEta.length >= 2) {
-          const etaHours = calculateEtaHours(stopsForEta[0], stopsForEta[1], avgSpeedKmh);
-          ceta = etaHours.toFixed(2) + "h";
-        }
+       
         const tripEta = stopsForEta.length >= 2 ? calculateTripEtaHours(stopsForEta, avgSpeedKmh).toFixed(2) + "h" : "";
-
+        const ceta=tripEta;
         // Determine vehicle/trip status
         const currentStop = stops.find(st => st.entry_time && !st.exit_time);
         const atStop = !!currentStop;
@@ -724,13 +731,20 @@ export async function getAllTrips(
           totalStoppageMs
         );
         const totalDriveTime = formatMsToHoursMinutes(totalDriveMs);
-
+        const tt=s.status === "inactive"
+            ? (s.end_time && s.start_time
+                ? new Date(s.end_time).getTime() - new Date(s.start_time).getTime()
+                : 0)
+            : (s.start_time
+                ? Date.now() - new Date(s.start_time).getTime()
+                : 0);
         return {
           id: s.shipment_id,
           route_Name: s.route_name,
           Domain_Name: s.domain_name,
           Start_Time: s.created_at ? formatDate(new Date(s.created_at).toISOString()) : "",
           End_Time: s.end_time || "",
+          total_time: formatDate(new Date(tt).toISOString()),
           driverName: equip?.driver_name || "",
           driverMobile: equip?.driver_mobile_no || "",
           serviceProviderAlias: equip?.service_provider_alias_value || "",
@@ -740,11 +754,15 @@ export async function getAllTrips(
           cuurent_location_address: current_location_address,
           current_location_coordindates: current_location_coordinates,
           last_gps_ping:last_gps_ping,
+          last_gps_vendor: last_gps_vendor || "",
           shipment_source: "logifriet",
           gps_vendor: gpsDetails.gps_vendor || "",
           gps_frequency: gpsDetails.gps_frequency || "",
+          gps_type: gpsDetails.gps_type || "",
+          gps_unit_id: gpsDetails.gps_unit_id || "",
           total_distance: total_distance.toFixed(2),
           total_covered_distance: covered_distance.toFixed(2),
+          average_distance: (covered_distance / tt).toFixed(2),
           status: s.status,
           origin: s.start_location,
           destination: s.end_location,
@@ -838,6 +856,7 @@ export async function insertData(data: any) {
 
     let current_address = "";
     if(gpsSchema.length > 0 && gpsSchema[0].latitude && gpsSchema[0].longitude) {
+      console.log("Fetching current address from GPS schema:", gpsSchema[0]);
       current_address = await reverseGeocode(Number(gpsSchema[0].latitude), Number(gpsSchema[0].longitude));  
     }
     
@@ -858,7 +877,7 @@ export async function insertData(data: any) {
         shipment_id: shipmentData.Shipment_Id,
         route_name: shipmentData.RouteName,
         transmission_header_id: Number(TransmissionId[0].id),
-        status: 'In-transit', 
+        status: 'in_transit', 
         route_id: "",
         route_type: "",
         start_time: "",
@@ -871,7 +890,7 @@ export async function insertData(data: any) {
         total_stoppage_time: '',
         total_drive_time: '',
         start_location: current_address || '',
-        end_location: last_location,
+        end_location: "",
         start_latitude: gpsSchema.length > 0 && gpsSchema[0].latitude != null ? parseFloat(String(gpsSchema[0].latitude)) : 0,
         start_longitude: gpsSchema.length > 0 && gpsSchema[0].longitude != null ? parseFloat(String(gpsSchema[0].longitude)) : 0,
         end_latitude: 0,
@@ -972,7 +991,7 @@ export async function insertData(data: any) {
         const customerLRDetailsArray = Array.isArray(customerLRDetails) ? customerLRDetails : [customerLRDetails];
         
         for (const lrDetail of customerLRDetailsArray) {
-            console.log("Inserting Customer LR Detail:", lrDetail);
+            // console.log("Inserting Customer LR Detail:", lrDetail);
             
             let customerId: number;
             const existingCustomer = await db.select()
@@ -1174,11 +1193,16 @@ function calculateStatusDurationsFromGPS(
     return timeA - timeB;
   });
   if (gpsRecords.length === 0) return "NA";
-   result+=(Date.now() - new Date(gpsRecords[gpsRecords.length-1].timestamp).getTime() )/ (1000 * 60 * 60);
+  // console.log("GPS Records:", gpsRecords);
+   result+=(Date.now() - Number(gpsRecords[gpsRecords.length-1].timestamp)*1000 )/ (1000 * 60 * 60);
+    // result+=(Date.now() - 1749479710*1000 )/ (1000 * 60 * 60);
+  // 1749479710
+  // console.log("Initial Result:", gpsRecords[gpsRecords.length-1].timestamp);
+  //  console.log("Result:", result);
    if(result<=thresholdHours){
-    for(let i=0;i<gpsRecords.length-1;i++){
+    for(let i=gpsRecords.length-1;i>0;i--){
     const timeA = new Date(gpsRecords[i].timestamp).getTime();
-    const timeB = new Date(gpsRecords[i+1].timestamp).getTime();
+    const timeB = new Date(gpsRecords[i-1].timestamp).getTime();
     const diff = (timeB - timeA) / (1000 * 60 * 60); // Difference in hours
     if(diff <= thresholdHours){
         result += diff;
@@ -1198,8 +1222,6 @@ function calculateStatusDurationsFromGPS(
         }
       }
    }
-  
- 
 
 
   return result.toFixed(2) + "h"; // Return total duration in hours
@@ -1258,14 +1280,22 @@ function calculateEtaHours(
  * Calculate total trip ETA (in hours) given all stops and average speed.
  */
 function calculateTripEtaHours(
-  stops: Array<{ latitude: number; longitude: number }>,
+  stops:any,
   avgSpeedKmh: number
 ): number {
-  let totalHours = 0;
-  for (let i = 1; i < stops.length; i++) {
-    totalHours += calculateEtaHours(stops[i - 1], stops[i], avgSpeedKmh);
+  //sort temo on the basis of stop_sequence
+  stops.sort((a: any, b: any) => a.stop_sequence - b.stop_sequence);
+  if (stops.length < 2 || !avgSpeedKmh || avgSpeedKmh <= 0) return 0;
+  let totalEtaHours = 0;
+  console.log("Calculating total ETA for stops:", stops);
+  for (let i = 0; i < stops.length - 1; i++)
+  {
+    const stopA = { latitude: stops[i].latitude, longitude: stops[i].longitude };
+    const stopB = { latitude: stops[i + 1].latitude, longitude: stops[i + 1].longitude };
+    totalEtaHours +=haversine(Number(stopA.latitude), Number(stopA.longitude),Number(stopB.latitude),Number( stopB.longitude));
   }
-  return totalHours;
+  console.log(totalEtaHours)
+  return Number(totalEtaHours)/ Number(avgSpeedKmh); // Return total ETA in hours
 }
 
 /**
@@ -1367,17 +1397,19 @@ function formatMsToHoursMinutes(ms: number): string {
 
 
 
-export async function getTripEnd(tripId: string | number) {
+export async function getTripEnd(data:any) {
   try {
-    console.log(`🏁 Processing trip end for trip ID: ${tripId}`);
-
+    // console.log(`🏁 Processing trip end for trip ID: ${tripId}`);
+    // return "";
+    const tripId = data.Transmission.TransmissionDetails.Shipment.Shipment_Id;
+    const equipment_id = data.Transmission.TransmissionDetails.Shipment.Equipment.Equipment_Id;
     // Find the active shipment by trip/shipment ID
     const [activeShipment] = await db
       .select()
       .from(shipment)
       .where(
         and(
-          ne(shipment.status, 'Inactive'),
+          ne(shipment.status, 'inactive'),
           eq(shipment.shipment_id, String(tripId))
         )
       )
@@ -1393,13 +1425,28 @@ export async function getTripEnd(tripId: string | number) {
 
     // Update shipment status to inactive and set end time
     const endTime = new Date().toISOString();
-    
+    const current_gps=await db.select().from(gps_schema).where(eq(gps_schema.trailerNumber, equipment_id)).orderBy(desc(gps_schema.timestamp)).limit(1);
+    // console.log(current_gps);
+    let current_location_coordinates: [number, number] = [0, 0];
+    let address = '';
+    if(!current_gps || current_gps.length === 0) {
+      console.log(`⚠️ No GPS data found for equipment ID: ${equipment_id}`);
+    }else{
+      current_location_coordinates=[
+      current_gps[0].latitude != null ? current_gps[0].latitude : 0,
+      current_gps[0].longitude != null ? current_gps[0].longitude : 0
+    ];
+    address = await reverseGeocode(Number(current_location_coordinates[0]),Number(current_location_coordinates[1]));
+    }
     await db
       .update(shipment)
       .set({
-        status: 'Inactive',
+        status: 'inactive',
         end_time: endTime,
-        updated_at: new Date()
+        updated_at: new Date(),
+        end_location: address || '',
+        end_latitude: current_location_coordinates[0],
+        end_longitude: current_location_coordinates[1],
       })
       .where(eq(shipment.id, activeShipment.id));
 

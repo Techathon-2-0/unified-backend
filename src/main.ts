@@ -22,7 +22,7 @@ import alertRouter from './routes/alert';
 import TrailRouter from './routes/trail';
 import bodyParser from 'body-parser';
 import bodyParserXml from 'body-parser-xml';
-
+import reportRouter from './routes/report';
 bodyParserXml(bodyParser);
 
 const app = express()
@@ -53,6 +53,7 @@ app.use(alarmRouter);
 app.use(intutrackRouter)
 app.use(alertRouter);
 app.use(TrailRouter);
+app.use(reportRouter);
 
 app.listen(port,async () => {
   console.log(`Example app listening on port ${port}`)

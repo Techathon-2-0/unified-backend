@@ -17,6 +17,7 @@ import {
 } from '../db/schema';
 import { gps_schema } from '../db/schema';
 import { drizzle } from 'drizzle-orm/mysql2';
+import { sendAlertEmail } from '../services/email';
 
 const db = drizzle(process.env.DATABASE_URL!);
 
@@ -159,7 +160,7 @@ export async function processReachedStopAlerts() {
                 .limit(1);
               
               // If no alert exists, create a new one
-              if (existingAlert.length === 0) {
+              // if (existingAlert.length === 0) {
                 // Insert new alert
                 const insertResult = await db
                 .insert(alert)
@@ -199,33 +200,19 @@ export async function processReachedStopAlerts() {
                   })
                   .where(eq(stop.id, currentStop.id));
                 
-                // Get email recipients for this alarm
-                const emailRecipients = await db
-                  .select({
-                    email: alarm_email.email_address
-                  })
-                  .from(alarm_email)
-                  .where(eq(alarm_email.alarm_id, alarmConfig.id));
-                
-                // Get SMS recipients for this alarm
-                const smsRecipients = await db
-                  .select({
-                    phone: alarm_phoneNumber.phone_number
-                  })
-                  .from(alarm_phoneNumber)
-                  .where(eq(alarm_phoneNumber.alarm_id, alarmConfig.id));
-                
-                // Here you would integrate with your email and SMS service
-                // Send notifications to all recipients
-                console.log(`Vehicle ${vehicle.vehicleNumber} has reached stop ${currentStop.stop_name}`);
-                console.log(`Email recipients: ${emailRecipients.map(r => r.email).join(', ')}`);
-                console.log(`SMS recipients: ${smsRecipients.map(r => r.phone).join(', ')}`);
+                                try {
+                  const additionalInfo = `Stop Details: ${currentStop.stop_name || 'Unnamed Stop'}\nDistance from stop: ${Math.round(distance)} meters\:`
+                  await sendAlertEmail(newAlertId, vehicle.vehicleNumber, additionalInfo);
+                } catch (emailError) {
+                  console.error("❌ Failed to send alert email, but alert was created:", emailError);
+                  // Don't throw error as alert creation was successful
+                }
               }
             }
           }
         }
       }
-    }
+    // }
     
     return { success: true, message: "Reached stop alerts processed successfully" };
   } catch (error) {

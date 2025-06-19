@@ -1,11 +1,44 @@
-// export async function getTrailData() {
-    
 import { shipment, equipment, stop, gps_schema, customer_lr_detail, customers , entity } from '../db/schema';
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { reverseGeocode } from '../utilities/geofunc';
 
 const db = drizzle(process.env.DATABASE_URL!);
+
+// Helper function to calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in kilometers
+}
+
+// Helper function to format time duration
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${remainingSeconds}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  } else {
+    return `${remainingSeconds}s`;
+  }
+}
+
+export interface TrailMetrics {
+  totalTime: number;
+  totalTimeFormatted: string;
+  avgSpeed: number;
+  totalDistance: number;
+}
 
 export interface VehicleTrailPoint {
   id: number;
@@ -28,6 +61,7 @@ export interface VehicleTrailResponse {
     startTime: string;
     endTime: string;
   };
+  metrics: TrailMetrics;
   trailPoints: VehicleTrailPoint[];
 }
 
@@ -91,6 +125,40 @@ export async function getVehicleTrail(
       })
     );
 
+    // Calculate metrics
+    let totalDistance = 0;
+    let totalTime = 0;
+    let avgSpeed = 0;
+
+    if (trailPoints.length > 0) {
+      // Calculate total time (difference between first and last GPS points)
+      totalTime = trailPoints[trailPoints.length - 1].timestamp - trailPoints[0].timestamp;
+
+      // Calculate total distance (sum of distances between consecutive points)
+      for (let i = 1; i < trailPoints.length; i++) {
+        const prevPoint = trailPoints[i - 1];
+        const currPoint = trailPoints[i];
+        if (prevPoint.latitude && prevPoint.longitude && currPoint.latitude && currPoint.longitude) {
+          totalDistance += calculateDistance(
+            prevPoint.latitude,
+            prevPoint.longitude,
+            currPoint.latitude,
+            currPoint.longitude
+          );
+        }
+      }
+
+      // Calculate average speed (total distance / total time in hours)
+      avgSpeed = totalTime > 0 ? (totalDistance / (totalTime / 3600)) : 0;
+    }
+
+    const metrics: TrailMetrics = {
+      totalTime,
+      totalTimeFormatted: formatDuration(totalTime),
+      avgSpeed: Math.round(avgSpeed * 100) / 100, // Round to 2 decimal places
+      totalDistance: Math.round(totalDistance * 100) / 100 // Round to 2 decimal places
+    };
+
     return {
       vehicleNumber,
       vehicleId: vehicle[0].id?.toString() || "",
@@ -99,6 +167,7 @@ export async function getVehicleTrail(
         startTime,
         endTime,
       },
+      metrics,
       trailPoints,
     };
   } catch (error) {
@@ -149,41 +218,12 @@ export interface TripTrailResponse {
   totalDistance: string;
   stops: TripStop[];
   trailPoints: TripTrailPoint[];
+  metrics: TrailMetrics;
   dateRange: {
     startTime: string;
     endTime: string;
   };
 }
-
-// export async function searchVehicles(searchTerm: string) {
-//   try {
-//     const vehicles = await db.select({
-//       id: entity.id,
-//       vehicleNumber: entity.vehicleNumber,
-//       type: entity.type,
-//       status: entity.status,
-//     })
-//     .from(entity)
-//     .where(
-//       and(
-//         eq(entity.status, true),
-//         // Add search functionality - you can extend this based on your needs
-//       )
-//     );
-
-//     // Filter by search term if provided
-//     if (searchTerm) {
-//       return vehicles.filter(vehicle => 
-//         vehicle.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase())
-//       );
-//     }
-
-//     return vehicles;
-//   } catch (error) {
-//     console.error('Error searching vehicles:', error);
-//     throw error;
-//   }
-// }
 
 export async function getTripTrail(
   shipmentId: string,
@@ -311,6 +351,40 @@ export async function getTripTrail(
       })
     );
 
+    // Calculate metrics
+    let totalDistance = 0;
+    let totalTime = 0;
+    let avgSpeed = 0;
+
+    if (trailPoints.length > 0) {
+      // Calculate total time (difference between first and last GPS points)
+      totalTime = trailPoints[trailPoints.length - 1].timestamp - trailPoints[0].timestamp;
+
+      // Calculate total distance (sum of distances between consecutive points)
+      for (let i = 1; i < trailPoints.length; i++) {
+        const prevPoint = trailPoints[i - 1];
+        const currPoint = trailPoints[i];
+        if (prevPoint.latitude && prevPoint.longitude && currPoint.latitude && currPoint.longitude) {
+          totalDistance += calculateDistance(
+            prevPoint.latitude,
+            prevPoint.longitude,
+            currPoint.latitude,
+            currPoint.longitude
+          );
+        }
+      }
+
+      // Calculate average speed (total distance / total time in hours)
+      avgSpeed = totalTime > 0 ? (totalDistance / (totalTime / 3600)) : 0;
+    }
+
+    const metrics: TrailMetrics = {
+      totalTime,
+      totalTimeFormatted: formatDuration(totalTime),
+      avgSpeed: Math.round(avgSpeed * 100) / 100, // Round to 2 decimal places
+      totalDistance: Math.round(totalDistance * 100) / 100 // Round to 2 decimal places
+    };
+
     // Calculate date range
     const dateRange = {
       startTime: startTime || (trailPoints.length > 0 ? trailPoints[0].time : ""),
@@ -326,9 +400,10 @@ export async function getTripTrail(
       status: trip.status || "",
       startLocation: trip.start_location || "",
       endLocation: trip.end_location || "",
-      totalDistance: "0", // You can calculate this based on GPS points
+      totalDistance: metrics.totalDistance.toString(),
       stops,
       trailPoints,
+      metrics,
       dateRange,
     };
   } catch (error) {

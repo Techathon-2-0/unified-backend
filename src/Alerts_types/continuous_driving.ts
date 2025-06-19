@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { eq , and, sql ,  gte} from "drizzle-orm";
 // import { alarm } from "../db/schema";
 import { gps_schema , alarm , entity , group , group_entity , alarm_alert , alarm_customer_group , alarm_email , alarm_geofence_group , alarm_group , alert , alert_shipment_relation , geofence_group_relation , geofence_table ,  stop , equipment} from "../db/schema";
+import { sendAlertEmail } from "../services/email";
 
 const db = drizzle(process.env.DATABASE_URL!);
 
@@ -176,8 +177,16 @@ async function createContinuousDrivingAlert(alarmId: number, vehicleNumber: stri
           shipment_id: vehicleShipment[0].shipmentId
         });
     }
-    
-    // Here you would add code to send SMS/email notifications
+        try {
+      const drivingHours = Math.floor(drivingMinutes / 60);
+      const remainingMinutes = drivingMinutes % 60;
+      const additionalInfo = `Continuous Driving Duration: ${drivingHours} hours ${remainingMinutes} minutes\nDriver needs rest break`;
+      await sendAlertEmail(newAlert.id, vehicleNumber, additionalInfo);
+    } catch (emailError) {
+      console.error("❌ Failed to send alert email, but alert was created:", emailError);
+      // Don't throw error as alert creation was successful
+    }
+
   } catch (error) {
     console.error("Error creating continuous driving alert:", error);
     throw error;

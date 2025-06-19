@@ -3,7 +3,7 @@ import { readMultipleXMLData, readSingleXMLData, readTripXMLData } from "../util
 import { getAllTrips, getTripById,insertTripFromXML } from "../controller/TripController";
 import { insertGpsData} from "../controller/Gpsfetcher";
 import { insertdumpdata } from "../controller/Dump";
-import { insertGpsDataFromXML } from "../controller/Gpsfetcher";
+//import { insertGpsDataFromXML } from "../controller/Gpsfetcher";
 
 const testingRouter= express.Router();
 testingRouter.post('/testing', async (req, res) => {

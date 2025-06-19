@@ -274,9 +274,10 @@ export const createUser = async (req: Request, res: Response) => {
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, phone, username, email, roles,tag,usertypes,active,custgrp} = req.body;
+    const { name, phone, username, email, roles,tag,usertypes,active} = req.body;
     const vehiclegrp = req.body.vehiclegroup || [];
     const geofencegrp = req.body.geofencegroup || [];
+    const custgrp = req.body.custgrp || [];
     // console.log('Creating user with data:', req.body);
     // res.status(201).json({
       // message: 'User created successfully'});
@@ -354,7 +355,7 @@ export const updateUser = async (req: Request, res: Response) => {
         });
       }
     }
-    return {name, phone, username, email, roles, tag, usertypes, vehiclegrp, geofencegrp};
+    return {name, phone, username, email, roles, tag, usertypes, vehiclegrp, geofencegrp, custgrp};
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ message: 'Failed to update user' });

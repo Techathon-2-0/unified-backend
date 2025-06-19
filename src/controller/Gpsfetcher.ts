@@ -1,10 +1,13 @@
+import 'dotenv/config';
 import { drizzle } from "drizzle-orm/mysql2";
-import { transmission_header, shipment, equipment, event, gps_details, stop, customer_lr_detail,gps_schema,vendor, entity} from '../db/schema';
-import { eq, inArray, and } from "drizzle-orm";
-import { readSingleXMLData } from "../utilities/xmlfunc";
+import { transmission_header, shipment, equipment, stop, customer_lr_detail, gps_schema, vendor, entity, gps_details } from '../db/schema';
+import { eq, inArray, and, desc } from "drizzle-orm";
 import axios from "axios";
 
 const db = drizzle(process.env.DATABASE_URL!);
+
+// Store last En-Route notification timestamps per vehicle
+const lastEnRouteNotification = new Map<string, number>();
 
 // Helper: Haversine distance in meters
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -20,17 +23,76 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+// Helper: Check if vehicle should send En-Route notification
+function shouldSendEnRouteNotification(trailerNumber: string, gpsFrequency: number): boolean {
+  const now = Date.now();
+  const lastNotification = lastEnRouteNotification.get(trailerNumber) || 0;
+  const intervalMs = (gpsFrequency / 100) * 1000; // Convert frequency to milliseconds (e.g., 3600 -> 36 seconds)
+  
+  return (now - lastNotification) >= intervalMs;
+}
+
+// Helper: Send En-Route notification
+async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
+  const domainName = activeShipment.domain_name || 'MM/ASOBEXE';
+
+  const xmlData = `<TransmissionDetails>
+    <Shipment>
+      <Domain_Name>${domainName}</Domain_Name>
+      <Equipment>
+        <Equipment_Id>${vehicleData.trailerNumber}</Equipment_Id>
+      </Equipment>
+      <Events>
+        <Event>
+          <EventCode>En-Route</EventCode>
+          <EventDateTime>${new Date().toISOString()}</EventDateTime>
+        </Event>
+      </Events>
+      <GPSDetails>
+        <GPSUnitID>${vehicleData.GPSVendor}</GPSUnitID>
+        <GPSVendor>${vehicleData.GPSVendor}</GPSVendor>
+      </GPSDetails>
+      <Shipment_Id>${activeShipment.shipment_id}</Shipment_Id>
+      <Stops>
+        <Stop>
+          <Latitude>${vehicleData.latitude}</Latitude>
+          <Longitude>${vehicleData.longitude}</Longitude>
+        </Stop>
+      </Stops>
+    </Shipment>
+  </TransmissionDetails>`;
+
+  try {
+    await axios.post(
+      process.env.ENTER_API_URL!,
+      xmlData,
+      {
+        headers: {
+          'X-ShipX-API-Key': process.env.ENTER_API_KEY!,
+          'Content-Type': 'application/xml',
+          'Cookie': process.env.ENTER_API_COOKIE!
+        }
+      }
+    );
+    
+    // Update last notification timestamp
+    lastEnRouteNotification.set(vehicleData.trailerNumber, Date.now());
+    console.log('🚛 En-Route notification sent for vehicle:', vehicleData.trailerNumber);
+  } catch (err: any) {
+    console.error('❌ Failed to send En-Route notification:', (err && err.response && err.response.data) || err?.message || err);
+  }
+}
+
 export async function insertGpsData(d: any) {
   try {
     // 1. Flatten data
     const data = JSON.parse(d.toString())
     const flatData = data.flat();
-    // console.log('Received GPS data:', flatData);
+    
     if (flatData.length === 0) {
       console.log('⚠️ No GPS data to insert.');
       return;
     }
-
 
     const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
     const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
@@ -60,72 +122,186 @@ export async function insertGpsData(d: any) {
       }
 
       if (equip?.shipment_id) {
-          const [activeShipment] = await db
-        .select()
-        .from(shipment)
-        .where(
-          and(
-            eq(shipment.status, 'Active'),
-            eq(shipment.shipment_id, String(equip.shipment_id))
+        const [activeShipment] = await db
+          .select()
+          .from(shipment)
+          .where(
+            and(
+              eq(shipment.status, 'Active'),
+              eq(shipment.shipment_id, String(equip.shipment_id))
+            )
           )
-        )
-        .limit(1);
-        console.log("active shipment",activeShipment);
-      if (!activeShipment) continue;
-        console.log("aya tha");
-      // 2. Fetch stops for this active shipment
-      const stops = await db.select().from(stop).where(eq(stop.shipment_id, activeShipment.id));
+          .limit(1);
 
-      // 3. Find the current max actual_sequence for this shipment's stops
-      const maxActualSeq = stops.reduce((max, st) => Math.max(max, st.actual_sequence || 0), 0);
+        if (!activeShipment) continue;
 
-      for (const st of stops) {
-        if (st.latitude && st.longitude && st.geo_fence_radius) {
-          const dist = haversine(
-            Number(v.latitude),
-            Number(v.longitude),
-            Number(st.latitude),
-            Number(st.longitude)
-          );
-          const inside = dist <= Number(st.geo_fence_radius);
+        // Get GPS frequency for this shipment
+        const [gpsDetail] = await db
+          .select()
+          .from(gps_details)
+          .where(eq(gps_details.shipment_id, activeShipment.id))
+          .limit(1);
 
-          // Fetch last GPS for this stop to determine previous state
-          const lastGps = await db
-            .select()
-            .from(gps_schema)
-            .where(eq(gps_schema.trailerNumber, v.trailerNumber))
-            .orderBy(gps_schema.timestamp)
-            .limit(1);
+        const gpsFrequency = gpsDetail?.gps_frequency || 3600; // Default frequency
 
-          let wasInside = false;
-          if (lastGps.length && st.latitude && st.longitude && st.geo_fence_radius) {
-            const lastDist = haversine(
-              Number(lastGps[0].latitude),
-              Number(lastGps[0].longitude),
+        // 2. Fetch stops for this active shipment
+        const stops = await db.select().from(stop).where(eq(stop.shipment_id, activeShipment.id));
+
+        // 3. Find the current max actual_sequence for this shipment's stops
+        const maxActualSeq = stops.reduce((max, st) => Math.max(max, st.actual_sequence || 0), 0);
+
+        let isInsideAnyGeofence = false;
+
+        for (const st of stops) {
+          if (st.latitude && st.longitude && st.geo_fence_radius) {
+            const dist = haversine(
+              Number(v.latitude),
+              Number(v.longitude),
               Number(st.latitude),
               Number(st.longitude)
             );
-            wasInside = lastDist <= Number(st.geo_fence_radius);
-          }
+            const inside = dist <= Number(st.geo_fence_radius);
 
-          // Enter event: was outside, now inside
-          if (!wasInside && inside) {
-            await db.update(stop)
-              .set({
-                entry_time: new Date().toISOString(),
-                actual_sequence: st.actual_sequence || maxActualSeq + 1 // set if not already set
-              })
-              .where(eq(stop.id, st.id));
-          }
-          // Exit event: was inside, now outside
-          if (wasInside && !inside) {
-            await db.update(stop)
-              .set({ exit_time: new Date().toISOString() })
-              .where(eq(stop.id, st.id));
+            if (inside) {
+              isInsideAnyGeofence = true;
+            }
+
+            // Fetch last GPS for this stop to determine previous state
+            const lastGps = await db
+              .select()
+              .from(gps_schema)
+              .where(eq(gps_schema.trailerNumber, v.trailerNumber))
+              .orderBy(desc(gps_schema.timestamp))
+              .limit(1);
+
+            let wasInside = false;
+            if (lastGps.length && st.latitude && st.longitude && st.geo_fence_radius) {
+              const lastDist = haversine(
+                Number(lastGps[0].latitude),
+                Number(lastGps[0].longitude),
+                Number(st.latitude),
+                Number(st.longitude)
+              );
+              wasInside = lastDist <= Number(st.geo_fence_radius);
+            }
+
+            // Enter event: was outside, now inside
+            if (!wasInside && inside) {
+              await db.update(stop)
+                .set({
+                  entry_time: new Date().toISOString(),
+                  actual_sequence: st.actual_sequence || maxActualSeq + 1
+                })
+                .where(eq(stop.id, st.id));
+
+              const domainName = activeShipment.domain_name;
+
+              const xmlData = `<TransmissionDetails>
+                <Shipment>
+                  <Domain_Name>${domainName}</Domain_Name>
+                  <Equipment>
+                    <Equipment_Id>${v.trailerNumber}</Equipment_Id>
+                  </Equipment>
+                  <Events>
+                    <Event>
+                      <EventCode>Vehicle Reached</EventCode>
+                      <EventDateTime>${new Date().toISOString()}</EventDateTime>
+                    </Event>
+                  </Events>
+                  <GPSDetails>
+                    <GPSUnitID>${v.GPSVendor}</GPSUnitID>
+                    <GPSVendor>${v.GPSVendor}</GPSVendor>
+                  </GPSDetails>
+                  <Shipment_Id>${activeShipment.shipment_id}</Shipment_Id>
+                  <Stops>
+                    <Stop>
+                      <Latitude>${v.latitude}</Latitude>
+                      <Location_Id>${st.location_id || st.id}</Location_Id>
+                      <Longitude>${v.longitude}</Longitude>
+                    </Stop>
+                  </Stops>
+                </Shipment>
+              </TransmissionDetails>`;
+
+              try {
+                await axios.post(
+                  process.env.ENTER_API_URL!,
+                  xmlData,
+                  {
+                    headers: {
+                      'X-ShipX-API-Key': process.env.ENTER_API_KEY!,
+                      'Content-Type': 'application/xml',
+                      'Cookie': process.env.ENTER_API_COOKIE!
+                    }
+                  }
+                );
+                console.log('🚚 Vehicle entered geofence, external API notified.');
+              } catch (err: any) {
+                console.error('❌ Failed to notify external API:', (err && err.response && err.response.data) || err?.message || err);
+              }
+            }
+            // Exit event: was inside, now outside
+            else if (wasInside && !inside) {
+              await db.update(stop)
+                .set({
+                  exit_time: new Date().toISOString()
+                })
+                .where(eq(stop.id, st.id));
+
+              const domainName = activeShipment.domain_name || 'MM/ASOBEXE';
+
+              const xmlData = `<TransmissionDetails>
+                <Shipment>
+                  <Domain_Name>${domainName}</Domain_Name>
+                  <Equipment>
+                    <Equipment_Id>${v.trailerNumber}</Equipment_Id>
+                  </Equipment>
+                  <Events>
+                    <Event>
+                      <EventCode>Vehicle Exited</EventCode>
+                      <EventDateTime>${new Date().toISOString()}</EventDateTime>
+                    </Event>
+                  </Events>
+                  <GPSDetails>
+                    <GPSUnitID>${v.GPSVendor}</GPSUnitID>
+                    <GPSVendor>${v.GPSVendor}</GPSVendor>
+                  </GPSDetails>
+                  <Shipment_Id>${activeShipment.shipment_id}</Shipment_Id>
+                  <Stops>
+                    <Stop>
+                      <Latitude>${v.latitude}</Latitude>
+                      <Location_Id>${st.location_id || st.id}</Location_Id>
+                      <Longitude>${v.longitude}</Longitude>
+                    </Stop>
+                  </Stops>
+                </Shipment>
+              </TransmissionDetails>`;
+
+              try {
+                await axios.post(
+                  process.env.ENTER_API_URL!,
+                  xmlData,
+                  {
+                    headers: {
+                      'X-ShipX-API-Key': process.env.ENTER_API_KEY!,
+                      'Content-Type': 'application/xml',
+                      'Cookie': process.env.ENTER_API_COOKIE!
+                    }
+                  }
+                );
+                console.log('🚚 Vehicle exited geofence, external API notified.');
+              } catch (err: any) {
+                console.error('❌ Failed to notify external API:', err?.response?.data || err.message);
+              }
+            }
           }
         }
-      }
-              
+
+        // ✅ NEW: En-Route Logic - Send notification if vehicle is not inside any geofence
+        // and is active (has an active shipment) and enough time has passed based on GPS frequency
+        if (!isInsideAnyGeofence && shouldSendEnRouteNotification(v.trailerNumber, gpsFrequency)) {
+          await sendEnRouteNotification(v, activeShipment);
+        }
       }
 
       gpsRecordsToInsert.push({
@@ -141,7 +317,6 @@ export async function insertGpsData(d: any) {
         digitalInput1: v.digitalInput1,
         internalBatteryLevel: v.internalBatteryLevel,
         GPSVendor: v.GPSVendor,
-
       });
     }
 
@@ -159,24 +334,8 @@ export async function insertGpsData(d: any) {
   }
 }
 
+// ...existing code...
 
-export async function insertGpsDataFromXML() {
-    const response =await  axios.get(`${process.env.GPS_API_URL}/gpsdata`);
-    const data= response.data.messages;
-    console.log(data);
-    if (!data) {
-        console.error("No data received from the API");
-        return {message:"errro"};
-    }
-    for(const item of data) {
-      for(const item2 of item){
-        insertGpsData(item2);
-      }
-    }
-    return {message:"success"};
-}
-
-//create gps fetcher function to fetch gps data from gps_schema table for specific vehicle 
 export async function fetchGpsDataByTrailerNumber(trailerNumber: string) {
     try {
         const gpsData = await db.select().from(gps_schema).where(eq(gps_schema.trailerNumber, trailerNumber));
@@ -190,4 +349,3 @@ export async function fetchGpsDataByTrailerNumber(trailerNumber: string) {
         throw error;
     }
 }
-
