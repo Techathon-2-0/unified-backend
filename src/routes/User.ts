@@ -9,13 +9,15 @@ import {
   loginUser,
   getUserbyUsername,
   changepassword,
+  logoutUser,
 } from '../controller/UserController';
 import { validateUserSession } from '../middleware/sessionValidator';
+
 
 const userRouter = express.Router();
 
 //working 
-userRouter.get('/user', async (req, res) => {
+userRouter.get('/user',  async (req, res) => {
     const { searchTerm } = req.query;
 
     try {
@@ -28,9 +30,11 @@ userRouter.get('/user', async (req, res) => {
             data = await getAllUsers(); // No need for req, res
             res.status(200).json({ message: 'All users fetched successfully', data });
         }
+        return;
     } catch (error) {
         console.error("Error in GET /users:", error);
         res.status(500).json({ message: "Internal Server Error" });
+        return;
     }
 });
 
@@ -147,6 +151,11 @@ userRouter.get('/user/validate', validateUserSession, (req: Request, res: Respon
   
   res.status(200).send({ valid: true });
 });
+
+userRouter.delete('/user/logout', async (req, res) => {
+  await logoutUser(req, res);
+});
+
 
 
 

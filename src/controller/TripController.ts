@@ -584,7 +584,7 @@ export async function getAllTrips(
               pickup_location = await reverseGeocode(Number(stop.latitude), Number(stop.longitude));
             } catch { pickup_location = ""; }
           }
-          let loading_unloading_time = "1";
+          let loading_unloading_time =stop.loading_unloading_time || "1h";
           const [geofence] = await db.select().from(geofence_table).where(eq(geofence_table.location_id, stop.location_id)).limit(1);
           if (geofence && geofence.time) loading_unloading_time = geofence.time;
 
@@ -593,7 +593,7 @@ export async function getAllTrips(
           else if (stop.entry_time) status = "In Progress";
 
           let detention_time = "";
-          let gname="";
+          
           if (stop.entry_time && stop.exit_time) {
             const entry = new Date(stop.entry_time).getTime();
             const exit = new Date(stop.exit_time).getTime();
@@ -604,20 +604,25 @@ export async function getAllTrips(
             const minutes = Math.floor((detentionMs % (1000 * 60 * 60)) / (1000 * 60));
             detention_time = `${hours}h ${minutes}m`;
           }
-
+          let gname="";
+            const loadingtime = stop.location_id != null
+              ? await db.select().from(geofence_table).where(eq(geofence_table.location_id, stop.location_id)).limit(1)
+              : [];
           for (const stop of stopsRows) {
           // If already delivered, mark as delivered and ceta is 0
           // console.log(latestGps);
+          
+          if (loadingtime.length > 0) {
+            gname = loadingtime[0].geofence_name || "";
+          }
           if (stop.entry_time && stop.exit_time) {
             stop.ceta = "0";
             status = "completed";
             const entryTimeMs = new Date(stop.entry_time).getTime();
             const exitTimeMs = new Date(stop.exit_time).getTime();
-            const loadingtime = stop.location_id != null
-              ? await db.select().from(geofence_table).where(eq(geofence_table.location_id, stop.location_id)).limit(1)
-              : [];
+            
             stop.detention_time = String(exitTimeMs - entryTimeMs - (Number(loadingtime[0]?.time || 1)));
-            gname= loadingtime[0]?.geofence_name || "";
+            
           } else {
             
             // Calculate ceta as ETA from current location to stop (in minutes)
@@ -731,20 +736,19 @@ export async function getAllTrips(
           totalStoppageMs
         );
         const totalDriveTime = formatMsToHoursMinutes(totalDriveMs);
-        const tt=s.status === "inactive"
+        console.log(s.start_time);
+        const tt=(true)
             ? (s.end_time && s.start_time
                 ? new Date(s.end_time).getTime() - new Date(s.start_time).getTime()
                 : 0)
-            : (s.start_time
-                ? Date.now() - new Date(s.start_time).getTime()
-                : 0);
+            : (Date.now() - new Date(Number(s.start_time)).getTime());
         return {
           id: s.shipment_id,
           route_Name: s.route_name,
           Domain_Name: s.domain_name,
           Start_Time: s.created_at ? formatDate(new Date(s.created_at).toISOString()) : "",
           End_Time: s.end_time || "",
-          total_time: formatDate(new Date(tt).toISOString()),
+          total_time: tt ? formatMsToHoursMinutes(tt) : "0h 0m",
           driverName: equip?.driver_name || "",
           driverMobile: equip?.driver_mobile_no || "",
           serviceProviderAlias: equip?.service_provider_alias_value || "",
@@ -1287,7 +1291,7 @@ function calculateTripEtaHours(
   stops.sort((a: any, b: any) => a.stop_sequence - b.stop_sequence);
   if (stops.length < 2 || !avgSpeedKmh || avgSpeedKmh <= 0) return 0;
   let totalEtaHours = 0;
-  console.log("Calculating total ETA for stops:", stops);
+  // console.log("Calculating total ETA for stops:", stops);
   for (let i = 0; i < stops.length - 1; i++)
   {
     const stopA = { latitude: stops[i].latitude, longitude: stops[i].longitude };

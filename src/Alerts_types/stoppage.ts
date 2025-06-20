@@ -14,7 +14,7 @@ export async function processStoppageAlerts() {
       .from(alarm)
       .where(
         and(
-          eq(alarm.alarm_category, "Stoppage"),
+          eq(alarm.alarm_type_id, 1),
           eq(alarm.alarm_status, true)
         )
       );
@@ -99,7 +99,7 @@ export async function processStoppageAlerts() {
                 
                 if (!hasMovedSignificantly) {
                   // Vehicle has been stopped without significant movement
-                  await createStoppageAlert(alarmConfig.id, vehicle.vehicleNumber, stoppageMinutes);
+                  await createStoppageAlert(alarmConfig.id, vehicle.vehicleNumber, stoppageMinutes, latestGps);
                 }
               }
             }
@@ -117,14 +117,16 @@ export async function processStoppageAlerts() {
 }
 
 // Helper function to create stoppage alert
-async function createStoppageAlert(alarmId: number, vehicleNumber: string, stoppageMinutes: number) {
+async function createStoppageAlert(alarmId: number, vehicleNumber: string, stoppageMinutes: number, latestGpsData: any) {
   try {
     // Always create a new alert when stoppage condition is met
     const [newAlert] = await db
       .insert(alert)
       .values({
         alert_type: alarmId,
-        status: 1 // Active
+        status: 1, // Active
+        latitude: latestGpsData.latitude ?? 0,
+        longitude: latestGpsData.longitude ?? 0
       })
       .$returningId();
     
@@ -155,7 +157,7 @@ async function createStoppageAlert(alarmId: number, vehicleNumber: string, stopp
     }
 
         try {
-      const additionalInfo = `Stoppage Duration: ${stoppageMinutes} minutes${location ? `\nLocation: ${location}` : ''}`;
+      const additionalInfo = `Stoppage Duration: ${stoppageMinutes} minutes${latestGpsData.address ? `\nLocation: ${latestGpsData.address}` : ''}`;
       await sendAlertEmail(newAlert.id, vehicleNumber, additionalInfo);
     } catch (emailError) {
       console.error("❌ Failed to send alert email, but alert was created:", emailError);

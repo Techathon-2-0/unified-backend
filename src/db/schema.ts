@@ -11,6 +11,14 @@ export const alert = mysqlTable('alert', {
   status: int('status').notNull().default(1), // 0: inactive, 1: active, 2: manually closed
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
+  latitude: double('latitude').notNull(),
+  longitude: double('longitude').notNull(),
+});
+
+export const alert_entity_relation = mysqlTable('alert_entity_relation', {
+  id: int().primaryKey().autoincrement(),
+  alert_id: int('alert_id').notNull().references(() => alert.id),
+  entity_id: int('entity_id').notNull().references(() => entity.id),
 });
 
 // ✅ Define indexes separately
@@ -327,7 +335,7 @@ export const alert_shipment_relation = mysqlTable('alert_shipment_relation', {
   id: int().primaryKey().autoincrement(),
   shipment_id: int('shipment_id').references(() => shipment.id),
   alert_id: int('alert_id').references(() => alert.id),
-  alert_method: int('alert_meathod').notNull().default(1),
+  alert_method: int('alert_meathod').notNull().default(1), //  
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
 });

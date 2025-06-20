@@ -33,7 +33,7 @@ GroupRouter.get("/groups", async (req, res) => {
         const data = await getAllGroups(req, res);
         // console.log(data);
         res.status(200).json({ message: "Groups fetched successfully", data });
-        res.status(200).json({ message: "Groups fetched successfully" });
+        // res.status(200).json({ message: "Groups fetched successfully" });
     } catch (error) {
         console.error("Error fetching groups:", error);
         res.status(500).json({ message: "Internal server error", error: error });

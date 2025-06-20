@@ -4,7 +4,7 @@ import { usersTable, role, usertype,group as vehiclegroup, geofencegroup, user_r
 import { eq, and, or,sql,like } from 'drizzle-orm';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-
+import axios from 'axios';
 const db = drizzle(process.env.DATABASE_URL!);
 //working
 export const getAllUsers = async () => {
@@ -161,7 +161,7 @@ export const createUser = async (req: Request, res: Response) => {
     const { name, phone, username, email, password, roles,tag,usertypes,custgrp} = req.body;
     const vehiclegrp = req.body.vehiclegroup || [];
     const geofencegrp = req.body.geofencegroup || [];
-
+    const token= req.headers.authorization?.split(' ')[1]||process.env.SSO_TOKEN;
     // console.log('Creating user with data:', req.body);
     // res.status(201).json({
       // message: 'User created successfully'});
@@ -195,6 +195,30 @@ export const createUser = async (req: Request, res: Response) => {
       }
     }
     
+  const response=await axios.post(
+    `${process.env.SSO_URL}/createUserAndMapGroups`,
+    {
+        "name":email,
+        "firstName":username,
+        "lastName":username,
+        "ou":`${process.env.SSO_OU}`,
+        "password":password,
+        "groups":[`${process.env.SSO_GROUP}`],
+        "permissions":[roles=="admin"?`${process.env.SSO_ADMIN_PERMISSION}`:`${process.env.SSO_USER_PERMISSION}`],
+ 
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      }
+    }
+  );
+  // console.log('SSO response:', response.data);
+  if(response.status !== 200) {
+    console.error('Error creating user in SSO:', response.data);
+    return res.status(500).json({ message: 'Failed to create user in SSO' });
+  }
     // // Hash password
     const hashedPassword = await bcrypt.hash(password,10);
     
@@ -366,14 +390,25 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+    const token = req.headers.authorization?.split(' ')[1] || process.env.SSO_TOKEN;
     // Check if user exists
     const existingUser = await db.select().from(usersTable).where(eq(usersTable.id, parseInt(id)))
     if (existingUser.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }   
+    const response=await axios.delete(`${process.env.SSO_URL}/user?cn=${existingUser[0].email}`,
+       {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    )
+    console.log(response);
+    if(response.status !== 200) {
+      console.error('Error deleting user in SSO:', response.data);
+      return res.status(500).json({ message: 'Failed to delete user in SSO' });
+    }
 
-    // Delete all user relations
     await db.delete(user_role).where(eq(user_role.user_id, parseInt(id)));
     await db.delete(user_usertype).where(eq(user_usertype.user_id, parseInt(id)));
     await db.delete(user_vehicle_group).where(eq(user_vehicle_group.user_id, parseInt(id)));
@@ -629,5 +664,25 @@ export const changepassword = async (req: Request, res: Response) => {
   }catch(error){
     console.error('Error changing password:', error);
     res.status(500).json({ message: 'Failed to change password' });
+  }
+}
+
+export async function logoutUser(req: Request, res: Response){
+  try {
+    console.log("logout called");
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.split(' ')[1]; // Expecting
+    // 'Bearer <token>'
+    console.log("logout token",token);
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    await axios.post(`${process.env.SSO_URL}/oauth/revoke/${token}`)
+
+    res.status(200).json({ message: 'User logged out successfully' });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    res.status(500).json({ message: 'Logout failed' });
   }
 }

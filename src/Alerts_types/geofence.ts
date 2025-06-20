@@ -137,7 +137,7 @@ export async function processGeofenceAlerts() {
               // Entry alert is enabled (status 0 = entry only, status 2 = both)
               if (isCurrentlyInside && !wasPreviouslyInside) {
                 // Vehicle has entered the geofence
-                await createGeofenceAlert(alarmConfig.id, vehicle.vehicleNumber, geofence.id, "entry");
+                await createGeofenceAlert(alarmConfig.id, vehicle.vehicleNumber, geofence.id, "entry", currentGps);
                 
                 // Update stop entry time if this geofence is associated with a stop
                 await updateStopEntryTime(geofence.id, vehicle.vehicleNumber);
@@ -148,7 +148,7 @@ export async function processGeofenceAlerts() {
               // Exit alert is enabled (status 1 = exit only, status 2 = both)
               if (!isCurrentlyInside && wasPreviouslyInside) {
                 // Vehicle has exited the geofence
-                await createGeofenceAlert(alarmConfig.id, vehicle.vehicleNumber, geofence.id, "exit");
+                await createGeofenceAlert(alarmConfig.id, vehicle.vehicleNumber, geofence.id, "exit", currentGps);
                 
                 // Update stop exit time if this geofence is associated with a stop
                 await updateStopExitTime(geofence.id, vehicle.vehicleNumber);
@@ -165,14 +165,16 @@ export async function processGeofenceAlerts() {
 }
 
 // Helper function to create geofence alert
-export async function createGeofenceAlert(alarmId: number, vehicleNumber: string, geofenceId: number, eventType: "entry" | "exit") {
+export async function createGeofenceAlert(alarmId: number, vehicleNumber: string, geofenceId: number, eventType: "entry" | "exit", currentGpsData: any) {
   try {
     // Always create a new alert when geofence condition is met
     const [newAlert] = await db
       .insert(alert)
       .values({
         alert_type: alarmId,
-        status: 1 // Active
+        status: 1, // Active
+        latitude: currentGpsData.latitude ?? 0,
+        longitude: currentGpsData.longitude ?? 0
       })
       .$returningId();
     

@@ -64,17 +64,17 @@ export async function processNoGPSFeedAlerts() {
             
             // Check if time since last update exceeds threshold
             if (timeSinceLastUpdateMinutes >= thresholdMinutes) {
-              await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, timeSinceLastUpdateMinutes);
+              await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, timeSinceLastUpdateMinutes, latestGps[0]);
             } else {
               await deactivateNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber);
             }
           } else {
             // No valid timestamp, treat as no GPS data
-            await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes);
+            await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes, latestGps[0]);
           }
         } else {
-          // No GPS data at all for this vehicle
-          await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes);
+          // No GPS data at all for this vehicle - use default coordinates
+          await createNoGPSFeedAlert(alarmConfig.id, vehicle.vehicleNumber, thresholdMinutes, null);
         }
       }
     }
@@ -85,14 +85,16 @@ export async function processNoGPSFeedAlerts() {
 }
 
 // Helper function to create no GPS feed alert
-async function createNoGPSFeedAlert(alarmId: number, vehicleNumber: string, timeWithoutUpdateMinutes: number) {
+async function createNoGPSFeedAlert(alarmId: number, vehicleNumber: string, timeWithoutUpdateMinutes: number, latestGpsData: any) {
   try {
       // Insert new alert
       const [newAlert] = await db
         .insert(alert)
         .values({
           alert_type: alarmId,
-          status: 1 // Active
+          status: 1, // Active
+          latitude: latestGpsData?.latitude ?? 0,
+          longitude: latestGpsData?.longitude ?? 0
         })
         .$returningId();
       

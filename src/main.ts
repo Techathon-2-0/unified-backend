@@ -23,6 +23,7 @@ import TrailRouter from './routes/trail';
 import bodyParser from 'body-parser';
 import bodyParserXml from 'body-parser-xml';
 import reportRouter from './routes/report';
+import { authenticateToken } from './middleware/sso';
 bodyParserXml(bodyParser);
 
 const app = express()
@@ -57,6 +58,16 @@ app.use(cookieParser());
 
 app.use(express.json());
 // app.use(cookieParser());
+// Helper to wrap async middleware for error handling
+function asyncHandler(fn: any) {
+  return function (req: any, res: any, next: any) {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+
+app.use(asyncHandler(authenticateToken)); // All routes below this line will require a token
+// console.log("Server started successfully");
 app.use(testingRouter);
 app.use(liveRouter);
 app.use(TRIPRouter);
@@ -74,6 +85,7 @@ app.use(intutrackRouter)
 app.use(alertRouter);
 app.use(TrailRouter);
 app.use(reportRouter);
+
 
 app.listen(port,async () => {
   console.log(`Example app listening on port ${port}`)

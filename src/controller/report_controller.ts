@@ -365,3 +365,7 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
     Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+
+// dashboard report me vehicle status daalna , 
+

@@ -13,7 +13,7 @@ export async function processOverspeedingAlerts() {
       .from(alarm)
       .where(
         and(
-          eq(alarm.alarm_category, "Overspeeding"),
+          eq(alarm.alarm_type_id, 2),
           eq(alarm.alarm_status, true)
         )
       );
@@ -60,7 +60,7 @@ export async function processOverspeedingAlerts() {
           
           // Check if vehicle is overspeeding
           if (gpsData.speed !== null && gpsData.speed !== undefined && gpsData.speed > speedThreshold) {
-            await createOverspeedingAlert(alarmConfig.id, vehicle.vehicleNumber, gpsData.speed, speedThreshold, gpsData.address ?? undefined);
+            await createOverspeedingAlert(alarmConfig.id, vehicle.vehicleNumber, gpsData.speed, speedThreshold, gpsData.address ?? undefined, gpsData);
           } else {
             // Vehicle is not overspeeding, check if there's an active alert to deactivate
             await deactivateOverspeedingAlert(alarmConfig.id, vehicle.vehicleNumber);
@@ -75,14 +75,16 @@ export async function processOverspeedingAlerts() {
 }
 
 // Helper function to create overspeeding alert
-async function createOverspeedingAlert(alarmId: number, vehicleNumber: string, currentSpeed: number, speedLimit: number, location?: string) {
+async function createOverspeedingAlert(alarmId: number, vehicleNumber: string, currentSpeed: number, speedLimit: number, location: string | undefined, gpsData: any) {
   try {
     // Always create a new alert when overspeeding condition is met
     const [newAlert] = await db
       .insert(alert)
       .values({
         alert_type: alarmId,
-        status: 1 // Active
+        status: 1, // Active
+        latitude: gpsData.latitude ?? 0,
+        longitude: gpsData.longitude ?? 0
       })
       .$returningId();
     

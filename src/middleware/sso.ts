@@ -1,27 +1,41 @@
+import axios from 'axios';
 import { Request, Response, NextFunction } from 'express';
 
-// Example SSO authentication middleware
-// Replace this logic with your actual SSO validation as per your docs
-
-export function ssoAuth(req: Request, res: Response, next: NextFunction) {
-    const ssoToken = req.headers['authorization'];
-
-    if (!ssoToken) {
-        return res.status(401).json({ message: 'No SSO token provided' });
+export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.split(' ')[1] || process.env.SSO_TOKEN; // Expecting 'Bearer <token>'
+    // console.log('Auth header:', token);
+    console.log('Auth header:', authHeader);
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'No token provided' });
     }
+    console.log('Received token:', token);
+    try { 
+        const response = await axios.post(
+            `${process.env.SSO_URL}/oauth/check_token`, // Replace with your auth service URL
+            new URLSearchParams({ token }), // x-www-form-urlencoded body
+            {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            }
+        );
+        // console.log('SSO response:', response.data);
+        const tokenData = response.data;
 
-    // TODO: Validate the SSO token according to your documentation
-    // Example: Call your SSO provider's validation endpoint or decode the token
+        if (!tokenData.active) {
+            return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
 
-    // If valid, proceed
-    // If invalid, return 401
+        // Attach user/token info to request for use in routes
+        // req.user = tokenData;
+        // console.log('Authenticated user:', tokenData);
+        next();
 
-    // Placeholder for actual validation
-    const isValid = true; // Replace with real validation
-
-    if (!isValid) {
-        return res.status(401).json({ message: 'Invalid SSO token' });
+    } catch (error: any) {
+        console.error('Auth middleware error:', error?.response?.data || error.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Token validation failed',
+            error: error?.response?.data || error.message
+        });
     }
-
-    next();
 }

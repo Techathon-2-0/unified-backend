@@ -166,7 +166,9 @@ export async function processReachedStopAlerts() {
                 .insert(alert)
                 .values({
                     alert_type: alarmConfig.id,
-                    status: 0 // Immediately set to inactive
+                    status: 0, // Immediately set to inactive
+                    latitude: gpsData.latitude ?? 0,
+                    longitude: gpsData.longitude ?? 0
                 })
                 .$returningId();
 

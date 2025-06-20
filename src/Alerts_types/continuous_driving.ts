@@ -15,7 +15,7 @@ export async function processContinuousDrivingAlerts() {
       .from(alarm)
       .where(
         and(
-          eq(alarm.alarm_category, "Continuous Driving"),
+          eq(alarm.alarm_type_id , 3),
           eq(alarm.alarm_status, true)
         )
       );
@@ -127,7 +127,7 @@ export async function processContinuousDrivingAlerts() {
           
           // Check if continuous driving exceeds threshold
           if (continuousDrivingMinutes >= thresholdMinutes) {
-            await createContinuousDrivingAlert(alarmConfig.id, vehicle.vehicleNumber, continuousDrivingMinutes);
+            await createContinuousDrivingAlert(alarmConfig.id, vehicle.vehicleNumber, continuousDrivingMinutes, gpsData[gpsData.length - 1]);
           } else {
             await deactivateContinuousDrivingAlert(alarmConfig.id, vehicle.vehicleNumber);
           }
@@ -141,14 +141,16 @@ export async function processContinuousDrivingAlerts() {
 }
 
  // Helper function to create continuous driving alert
-async function createContinuousDrivingAlert(alarmId: number, vehicleNumber: string, drivingMinutes: number) {
+async function createContinuousDrivingAlert(alarmId: number, vehicleNumber: string, drivingMinutes: number, latestGpsData: any) {
   try {
     // Always create a new alert when continuous driving condition is met
     const [newAlert] = await db
       .insert(alert)
       .values({
         alert_type: alarmId,
-        status: 1 // Active
+        status: 1, // Active
+        latitude: latestGpsData.latitude ?? 0,
+        longitude: latestGpsData.longitude ?? 0
       })
       .$returningId();
     
