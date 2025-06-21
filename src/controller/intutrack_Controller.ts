@@ -93,7 +93,16 @@ export const refreshConsentStatus = async (req: Request, res: Response) => {
       });
     }
 
-    // Return response to frontend
+    // Fetch the latest record to get updated_at
+    const latestRecord = await db
+      .select()
+      .from(intutrack_relation)
+      .where(eq(intutrack_relation.phone_number, driverMobile))
+      .limit(1);
+
+    const latest = latestRecord[0];
+
+    // Return response to frontend with updated_at
     return res.status(200).json({
       success: true,
       data: {
@@ -102,7 +111,8 @@ export const refreshConsentStatus = async (req: Request, res: Response) => {
         consent: consentData.consent,
         operator: consentData.operator,
         consent_suggestion: consentData.consent_suggestion,
-        message: consentData.message
+        message: consentData.message,
+        updated_at: latest?.updated_at // <-- return updated_at (last consent hit)
       }
     });
 
@@ -159,9 +169,13 @@ export const getConsentStatus = async (req: Request, res: Response) => {
       });
     }
 
+    // Return response to frontend with updated_at
     return res.status(200).json({
       success: true,
-      data: consentData[0]
+      data: {
+        ...consentData[0],
+        updated_at: consentData[0].updated_at // <-- return updated_at
+      }
     });
 
   } catch (error) {

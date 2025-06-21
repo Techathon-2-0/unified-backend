@@ -548,6 +548,8 @@ export async function getAllTrips(
         let last_gps_vendor="";
         // console.log("Fetching latest GPS data for vehicle:", equip?.equipment_id);
         const latestGps = gpsMap.get(equip?.equipment_id ?? "");
+        //if s.status is inactive then we need to fetch the last gps in that time interval
+      
         // console.log("Latest GPS data:", latestGps);
         if (latestGps && latestGps.latitude != null && latestGps.longitude != null) {
           // console.log("Latest GPS data found:", latestGps);
@@ -766,6 +768,7 @@ export async function getAllTrips(
           last_gps_ping:last_gps_ping,
           last_gps_vendor: last_gps_vendor || "",
           shipment_source: "logifriet",
+
           gps_vendor: gpsDetails.gps_vendor || "",
           gps_frequency: gpsDetails.gps_frequency || "",
           gps_type: gpsDetails.gps_type || "",
