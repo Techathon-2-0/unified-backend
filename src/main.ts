@@ -66,7 +66,7 @@ function asyncHandler(fn: any) {
 }
 
 
-// app.use(asyncHandler(authenticateToken)); // All routes below this line will require a token
+app.use(asyncHandler(authenticateToken)); // All routes below this line will require a token
 // console.log("Server started successfully");
 app.use(testingRouter);
 app.use(liveRouter);
