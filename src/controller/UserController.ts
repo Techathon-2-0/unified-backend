@@ -158,7 +158,8 @@ export const getUserById = async (req: Request, res: Response) => {
 // working
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { name, phone, username, email, password, roles,tag,usertypes,custgrp} = req.body;
+    const { name, phone, username, email, password, roles,tag,usertypes} = req.body;
+    const custgrp= req.body.custgrp || [];
     const vehiclegrp = req.body.vehiclegroup || [];
     const geofencegrp = req.body.geofencegroup || [];
     const token= req.headers.authorization?.split(' ')[1]||process.env.SSO_TOKEN;

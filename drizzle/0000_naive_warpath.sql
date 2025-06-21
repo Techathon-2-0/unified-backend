@@ -64,7 +64,16 @@ CREATE TABLE `alert` (
 	`status` int NOT NULL DEFAULT 1,
 	`created_at` timestamp DEFAULT (now()),
 	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`latitude` double NOT NULL,
+	`longitude` double NOT NULL,
 	CONSTRAINT `alert_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `alert_entity_relation` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`alert_id` int NOT NULL,
+	`entity_id` int NOT NULL,
+	CONSTRAINT `alert_entity_relation_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `alert_shipment_relation` (
@@ -279,6 +288,8 @@ CREATE TABLE `intutrack_relation` (
 	`current_consent` varchar(255) NOT NULL,
 	`consent` varchar(255) NOT NULL,
 	`operator` varchar(255) NOT NULL,
+	`created_at` timestamp DEFAULT (now()),
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `intutrack_relation_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -501,6 +512,8 @@ ALTER TABLE `alarm_group` ADD CONSTRAINT `alarm_group_alarm_id_alarm_id_fk` FORE
 ALTER TABLE `alarm_group` ADD CONSTRAINT `alarm_group_vehicle_group_id_group_id_fk` FOREIGN KEY (`vehicle_group_id`) REFERENCES `group`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `alarm_phoneNumber` ADD CONSTRAINT `alarm_phoneNumber_alarm_id_alarm_id_fk` FOREIGN KEY (`alarm_id`) REFERENCES `alarm`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `alert` ADD CONSTRAINT `alert_alert_type_alarm_id_fk` FOREIGN KEY (`alert_type`) REFERENCES `alarm`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `alert_entity_relation` ADD CONSTRAINT `alert_entity_relation_alert_id_alert_id_fk` FOREIGN KEY (`alert_id`) REFERENCES `alert`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `alert_entity_relation` ADD CONSTRAINT `alert_entity_relation_entity_id_entity_id_fk` FOREIGN KEY (`entity_id`) REFERENCES `entity`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `alert_shipment_relation` ADD CONSTRAINT `alert_shipment_relation_shipment_id_shipment_id_fk` FOREIGN KEY (`shipment_id`) REFERENCES `shipment`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `alert_shipment_relation` ADD CONSTRAINT `alert_shipment_relation_alert_id_alert_id_fk` FOREIGN KEY (`alert_id`) REFERENCES `alert`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `customer_group_relation` ADD CONSTRAINT `customer_group_relation_customer_id_customers_id_fk` FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
