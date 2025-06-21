@@ -45,7 +45,24 @@ export async function createGeoFence(req: Request, res: Response) {
                 message: 'Polygon geofence requires at least 3 coordinate points'
             });
         }
-        
+
+        const existingGeofence = await db
+            .select()
+            .from(geofence_table)
+            .where(
+                and(
+                eq(geofence_table.location_id, location_id),
+                eq(geofence_table.stop_type, stop_type)
+                )
+            )
+            .limit(1);
+
+        if (existingGeofence.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'A geofence with the same location_id and stop_type already exists'
+            });
+        }
         // Create geofence
         const [insertedId] = await db.insert(geofence_table).values({
             geofence_name,
@@ -400,7 +417,10 @@ export async function getGeoFencesByUserId(req: Request, res: Response) {
         // 3. Get geofence details
         const geofences = await db.select()
             .from(geofence_table)
-            .where(inArray(geofence_table.id, geofenceIds));
+            .where(and(
+                inArray(geofence_table.id, geofenceIds)
+                , ne(geofence_table.status, false) // Exclude inactive geofences
+            ));
 
         // 4. Attach polygon points if needed
         const result = await Promise.all(geofences.map(async (geo) => {

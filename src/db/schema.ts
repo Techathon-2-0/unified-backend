@@ -1,5 +1,6 @@
 import { mysqlTable, varchar, int, timestamp, double, boolean, index } from 'drizzle-orm/mysql-core';
 import { desc } from 'drizzle-orm';
+import { create } from 'domain';
 
 // ========================================
 // ALERT AND ALARM SYSTEM TABLES WITH INDEXES
@@ -618,6 +619,8 @@ export const intutrack_relation = mysqlTable('intutrack_relation', {
   current_consent: varchar('current_consent', { length: 255 }).notNull(),
   consent: varchar('consent', { length: 255 }).notNull(),
   operator: varchar('operator', { length: 255 }).notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow().onUpdateNow(),
 });
 
 export const alarm_phoneNumber = mysqlTable('alarm_phoneNumber', {

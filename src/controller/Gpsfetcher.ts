@@ -34,11 +34,13 @@ function shouldSendEnRouteNotification(trailerNumber: string, gpsFrequency: numb
 
 // Helper: Send En-Route notification
 async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
+
+
   const domainName = activeShipment.domain_name || 'MM/ASOBEXE';
 
   const xmlData = `<TransmissionDetails>
     <Shipment>
-      <Domain_Name>${domainName}</Domain_Name>
+      <Domain_Name>MM/ASOBEXE</Domain_Name>
       <Equipment>
         <Equipment_Id>${vehicleData.trailerNumber}</Equipment_Id>
       </Equipment>

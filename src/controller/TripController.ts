@@ -14,6 +14,7 @@ import bcrypt from "bcryptjs";
 // import haversine from 'haversine-distance'; // You can use any haversine implementation
 
 const db = drizzle(process.env.DATABASE_URL!);
+
 function formatToDaysHoursMinutes(ms: number): string {
   const days = Math.floor(ms / (1000 * 60 * 60 * 24));
   const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -538,7 +539,6 @@ export async function getAllTrips(
           gps_unit_id: gpsDetailsRow?.gps_unit_id ?? ""
         };
 
-
         const entityInfo = entityMap.get(equip?.equipment_id || "");
 
         let current_location_address = "";
@@ -684,7 +684,7 @@ export async function getAllTrips(
           };
         }));
 
-        // Fetch all GPS records for this vehicle, sorted by timestamp
+
         const allGpsRecords = gpsRows
           .filter(row => row.trailerNumber === equip?.equipment_id && row.timestamp !== null)
           .sort((a, b) => 
@@ -695,7 +695,7 @@ export async function getAllTrips(
             timestamp: row.timestamp as string | number
           }));
 
-        // Calculate total stoppage time from GPS
+
         const totalStoppageMs = calculateTotalStoppageTimeFromGPS(
           allGpsRecords.map(rec => ({
             latitude: rec.latitude != null ? Number(rec.latitude) : 0,
@@ -709,7 +709,12 @@ export async function getAllTrips(
         const totalDetentionTime = formatMsToHoursMinutes(totalDetentionMs);
 
         // Calculate status durations
-        const statusDurations = calculateStatusDurationsFromGPS(allGpsRecords);
+        // console.log("Calculating status durations from GPS records...");
+
+        const statusDurations = calculateStatusDurationsFromGPS(
+          allGpsRecords,
+          s.start_time ? Math.floor(new Date("2025-06-21T08:09:08.749Z").getTime() / 1000) : 0
+        );
 
         // Example: Calculate ceta and trip eta for each trip
 
@@ -737,26 +742,27 @@ export async function getAllTrips(
         );
         const totalDriveTime = formatMsToHoursMinutes(totalDriveMs);
         console.log(s.start_time);
-        const tt=(true)
-            ? (s.end_time && s.start_time
+        const tt=(s.end_time && s.start_time
                 ? new Date(s.end_time).getTime() - new Date(s.start_time).getTime()
-                : 0)
-            : (Date.now() - new Date(Number(s.start_time)).getTime());
+                : Date.now()/1000 - new Date(Number(s.start_time?? 0)).getTime())
+            
+            console.log("tt",tt);
+            
         return {
           id: s.shipment_id,
           route_Name: s.route_name,
           Domain_Name: s.domain_name,
           Start_Time: s.created_at ? formatDate(new Date(s.created_at).toISOString()) : "",
           End_Time: s.end_time || "",
-          total_time: tt ? formatMsToHoursMinutes(tt) : "0h 0m",
+          total_time: tt ? formatMsToHoursMinutes(Number(tt)) : "0h 0m",
           driverName: equip?.driver_name || "",
           driverMobile: equip?.driver_mobile_no || "",
           serviceProviderAlias: equip?.service_provider_alias_value || "",
           Vehicle_number: equip?.equipment_id || "",
           vehicle_type: entityInfo?.vehicle_type || "",
           vehicle_groups: vehicleGroups,
-          cuurent_location_address: current_location_address,
-          current_location_coordindates: current_location_coordinates,
+          cuurent_location_address:s.status=="inactive"?"-": current_location_address,
+          current_location_coordindates:s.status=="inactive"?["-","-"]: current_location_coordinates,
           last_gps_ping:last_gps_ping,
           last_gps_vendor: last_gps_vendor || "",
           shipment_source: "logifriet",
@@ -764,9 +770,9 @@ export async function getAllTrips(
           gps_frequency: gpsDetails.gps_frequency || "",
           gps_type: gpsDetails.gps_type || "",
           gps_unit_id: gpsDetails.gps_unit_id || "",
-          total_distance: total_distance.toFixed(2),
-          total_covered_distance: covered_distance.toFixed(2),
-          average_distance: (covered_distance / tt).toFixed(2),
+          total_distance: total_distance.toFixed(2) +"km",
+          total_covered_distance: covered_distance.toFixed(2) +"km",
+          average_distance: Number(tt)==0? "0km":((Number(covered_distance) ) / Number(tt)).toFixed(2) + " km",
           status: s.status,
           origin: s.start_location,
           destination: s.end_location,
@@ -843,7 +849,13 @@ export async function insertData(data: any) {
     if(!authticated){
         return { message: "User not authenticated" };
     }
-    
+    const checkvechicleexist= await db.select().from(entity).where(eq(entity.vehicleNumber, data.TransmissionDetails.Shipment.Equipment.Equipment_Id)).limit(1);
+    if(checkvechicleexist.length == 0){
+        // console.log("Equipment already exists with ID:", data.TransmissionDetails.Shipment.Equipment.Equipment_Id);
+        return { message: "Equipment Doesn't Exist" };
+    }
+
+
     const transmissionHeader = data.TransmissionHeader;
     const TransmissionId = await db.insert(transmission_header).values({   
         username: transmissionHeader.UserName,
@@ -851,6 +863,9 @@ export async function insertData(data: any) {
         token: transmissionHeader.Token || ''
     }).$returningId();
     
+
+
+
     //fetch the longitude and latitude of the current vehicle from gps_schema latest
     const gpsSchema = await db.select()
         .from(gps_schema)
@@ -876,6 +891,7 @@ export async function insertData(data: any) {
     }
     
     const shipmentData = data.TransmissionDetails.Shipment;
+    const current_time= new Date().toISOString();
     const shipmentid = await db.insert(shipment).values({
         domain_name: shipmentData.Domain_Name,
         shipment_id: shipmentData.Shipment_Id,
@@ -884,7 +900,7 @@ export async function insertData(data: any) {
         status: 'in_transit', 
         route_id: "",
         route_type: "",
-        start_time: "",
+        start_time: current_time,
         end_time: "",
         current_location: '',
         location_datetime: "",
@@ -953,8 +969,35 @@ export async function insertData(data: any) {
 
     const stops = shipmentData.Stops.Stop || [];
     for (const st of stops) {
-        // const address = await reverseGeocode(Number(st.Latitude), Number(st.Longitude));
-        const address = "";
+        const address = await reverseGeocode(Number(st.Latitude), Number(st.Longitude));
+              // const address = "";
+            //insert only those who are not present
+            const existingGeofence = await db
+        .select()
+        .from(geofence_table)
+        .where(
+          and(
+            eq(geofence_table.location_id, st.Location_Id),
+            eq(geofence_table.stop_type, st.StopType)
+          )
+        )
+        .limit(1);
+
+      if (existingGeofence.length === 0) {
+        await db.insert(geofence_table).values({
+          geofence_name: String(st.Location_Id),
+          radius: parseInt(st.GeoFenceRadius, 10) || 0,
+          latitude: parseFloat(st.Latitude),
+          longitude: parseFloat(st.Longitude),
+          location_id: st.Location_Id,
+          created_at: new Date(),
+          updated_at: new Date(),
+          stop_type: st.StopType,
+          geofence_type: 0,
+          status: true,
+          address: address || '',
+        });
+      }
         await db.insert(geofence_table).values({
             geofence_name: String(st.Location_Id),
             radius: parseInt(st.GeoFenceRadius, 10) || 0,
@@ -968,6 +1011,7 @@ export async function insertData(data: any) {
             status: true,
             address: address || '',
         });
+
         
         const stopId = await db.insert(stop).values({
             location_id: st.Location_Id,
@@ -1185,9 +1229,10 @@ interface StatusSegment {
 
 function calculateStatusDurationsFromGPS(
   gpsRecords: Array<{ timestamp: string | number }>,
+  tripStartTime: string | number | null = null,
   thresholdHours = 3
 ): string {
-  if (!gpsRecords || gpsRecords.length === 0) return "NA";
+  if (!gpsRecords || gpsRecords.length === 0) return "0h";
 
   // Sort GPS records by timestamp
   let result=0;
@@ -1196,18 +1241,25 @@ function calculateStatusDurationsFromGPS(
     const timeB = new Date(b.timestamp).getTime();
     return timeA - timeB;
   });
-  if (gpsRecords.length === 0) return "NA";
+  if (gpsRecords.length === 0) return "0";
   // console.log("GPS Records:", gpsRecords);
+  if(Number(gpsRecords[gpsRecords.length-1].timestamp)<Number(tripStartTime)){
+    return "0h";
+  }
    result+=(Date.now() - Number(gpsRecords[gpsRecords.length-1].timestamp)*1000 )/ (1000 * 60 * 60);
     // result+=(Date.now() - 1749479710*1000 )/ (1000 * 60 * 60);
   // 1749479710
   // console.log("Initial Result:", gpsRecords[gpsRecords.length-1].timestamp);
   //  console.log("Result:", result);
+  console.log("Trip Start Time:", tripStartTime);
    if(result<=thresholdHours){
     for(let i=gpsRecords.length-1;i>0;i--){
+      if(Number(gpsRecords[i].timestamp) < Number(tripStartTime)){
+        break;
+      }
     const timeA = new Date(gpsRecords[i].timestamp).getTime();
     const timeB = new Date(gpsRecords[i-1].timestamp).getTime();
-    const diff = (timeB - timeA) / (1000 * 60 * 60); // Difference in hours
+    const diff = (timeB - timeA) ; // Difference in hours
     if(diff <= thresholdHours){
         result += diff;
     }else{
@@ -1218,7 +1270,7 @@ function calculateStatusDurationsFromGPS(
        for(let i=0;i<gpsRecords.length-1;i++){
         const timeA = new Date(gpsRecords[i].timestamp).getTime();
         const timeB = new Date(gpsRecords[i+1].timestamp).getTime();
-        const diff = (timeB - timeA) / (1000 * 60 * 60); // Difference in hours
+        const diff = (timeB - timeA) ; // Difference in hours
         if(diff >= thresholdHours){
             result += diff;
         }else{
@@ -1227,8 +1279,8 @@ function calculateStatusDurationsFromGPS(
       }
    }
 
-
-  return result.toFixed(2) + "h"; // Return total duration in hours
+   console.log(result);
+  return formatMsToHoursMinutes(Number(result)*1000*60*60); // Return total duration in hours
 }
 
 /**
@@ -1394,9 +1446,10 @@ function calculateTotalDriveTime(
  * Format milliseconds to "Xh Ym" string.
  */
 function formatMsToHoursMinutes(ms: number): string {
-  const hours = Math.floor(ms / (1000 * 60 * 60));
+ const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  return `${hours}h ${minutes}m`;
+  return `${days}d ${hours}h ${minutes}m`;
 }
 
 
