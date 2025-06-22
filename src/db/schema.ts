@@ -616,7 +616,7 @@ export const gpsDetailsShipmentIdx = index('idx_gps_details_shipment').on(gps_de
 export const intutrack_relation = mysqlTable('intutrack_relation', {
   id: int().primaryKey().autoincrement(),
   phone_number: varchar('phone_number', { length: 15 }).notNull(),
-  current_consent: varchar('current_consent', { length: 255 }).notNull(),
+  current_consent: varchar('current_consent', { length: 255 }).default('Pending'),
   consent: varchar('consent', { length: 255 }).notNull(),
   operator: varchar('operator', { length: 255 }).notNull(),
   created_at: timestamp('created_at').defaultNow(),

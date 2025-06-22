@@ -255,3 +255,147 @@ export async function getAlarmEmailAddresses(alarmId: number): Promise<string[]>
     return [];
   }
 }
+
+// Alarm type mapping (from aconfig.tsx)
+const ALARM_TYPE_MAP: Record<number, string> = {
+  1: "Stoppage",
+  2: "Overspeeding",
+  3: "Continuous Driving",
+  4: "No GPS Feed",
+  5: "Reached Stop",
+  6: "Geofence",
+  7: "Route Deviation",
+};
+
+/**
+ * Generate alert email subject and HTML body according to alarm type and info
+ */
+export function generateAlertEmailTemplate({
+  alarmTypeId,
+  vehicleNumber,
+  tripId,
+  location,
+  alertTime,
+  driverName,
+  driverMobile,
+  vendorName,
+  customerName,
+  alarmValue,
+  description,
+  additionalInfo,
+}: {
+  alarmTypeId: number;
+  vehicleNumber: string;
+  tripId?: string;
+  location?: string;
+  alertTime?: string;
+  driverName?: string;
+  driverMobile?: string;
+  vendorName?: string;
+  customerName?: string;
+  alarmValue?: string | number;
+  description?: string;
+  additionalInfo?: string;
+}): { subject: string; html: string; text: string } {
+  const alarmType = ALARM_TYPE_MAP[alarmTypeId] || "General";
+  let subject = `Alert : ${alarmType}`;
+  if (alarmType === "Continuous Driving") {
+    subject += ` - Continuous Driving Detected for Vehicle ${vehicleNumber}`;
+    if (tripId) subject += ` | Trip : ${tripId}`;
+  } else if (alarmType === "Overspeeding") {
+    subject += ` - Overspeeding Detected for Vehicle ${vehicleNumber}`;
+    if (tripId) subject += ` | Trip : ${tripId}`;
+  } else if (alarmType === "Geofence") {
+    subject += ` - Geofence Breach for Vehicle ${vehicleNumber}`;
+    if (tripId) subject += ` | Trip : ${tripId}`;
+  } else {
+    subject += ` - ${alarmType} for Vehicle ${vehicleNumber}`;
+    if (tripId) subject += ` | Trip : ${tripId}`;
+  }
+
+  // Compose main info block
+  let infoBlock = "";
+  if (vehicleNumber) infoBlock += `<p><b>Vehicle No.:</b> ${vehicleNumber}</p>`;
+  if (tripId) infoBlock += `<p><b>Trip ID:</b> ${tripId}</p>`;
+  if (alarmType === "Continuous Driving" && alarmValue) infoBlock += `<p><b>Continuous Driving Duration:</b> ${alarmValue} hours</p>`;
+  if (alarmType === "Overspeeding" && alarmValue) infoBlock += `<p><b>Speed Threshold:</b> ${alarmValue} km/h</p>`;
+  if (location) infoBlock += `<p><b>Location:</b> ${location}</p>`;
+  if (alertTime) infoBlock += `<p><b>Alert Time:</b> ${alertTime}</p>`;
+  if (driverName) infoBlock += `<p><b>Driver Name:</b> ${driverName}</p>`;
+  if (driverMobile) infoBlock += `<p><b>Driver Mobile:</b> ${driverMobile}</p>`;
+  if (vendorName) infoBlock += `<p><b>GPS Vendor:</b> ${vendorName}</p>`;
+  if (customerName) infoBlock += `<p><b>Customer Name:</b> ${customerName}</p>`;
+
+  // Compose disclaimer
+  const disclaimer = `<div style="font-size:12px;color:#888;margin-top:24px;">
+Disclaimer: This is an automated email. If you are not the intended recipient, please notify us immediately and delete this message. Unauthorized use, copying, or disclosure of this information is prohibited. For assistance, contact: <a href="mailto:otherapps.support@mllltd.zohodesk.com">otherapps.support@mllltd.zohodesk.com</a>
+</div>`;
+
+  // Compose HTML body
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+      <h2 style="color:#dc3545;">${subject}</h2>
+      <div style="background:#f8f9fa;padding:20px;border-radius:8px;">
+        ${infoBlock}
+        ${description ? `<p><b>Description:</b> ${description}</p>` : ""}
+        ${additionalInfo ? `<p><b>Additional Info:</b> ${additionalInfo}</p>` : ""}
+      </div>
+      ${disclaimer}
+    </div>
+  `;
+
+  // Compose plain text version
+  let text = `${subject}\n\n`;
+  if (vehicleNumber) text += `Vehicle No.: ${vehicleNumber}\n`;
+  if (tripId) text += `Trip ID: ${tripId}\n`;
+  if (alarmType === "Continuous Driving" && alarmValue) text += `Continuous Driving Duration: ${alarmValue} hours\n`;
+  if (alarmType === "Overspeeding" && alarmValue) text += `Speed Threshold: ${alarmValue} km/h\n`;
+  if (location) text += `Location: ${location}\n`;
+  if (alertTime) text += `Alert Time: ${alertTime}\n`;
+  if (driverName) text += `Driver Name: ${driverName}\n`;
+  if (driverMobile) text += `Driver Mobile: ${driverMobile}\n`;
+  if (vendorName) text += `GPS Vendor: ${vendorName}\n`;
+  if (customerName) text += `Customer Name: ${customerName}\n`;
+  if (description) text += `Description: ${description}\n`;
+  if (additionalInfo) text += `Additional Info: ${additionalInfo}\n`;
+  text += `\nDisclaimer: This is an automated email. If you are not the intended recipient, please notify us immediately and delete this message. Unauthorized use, copying, or disclosure of this information is prohibited. For assistance, contact: otherapps.support@mllltd.zohodesk.com\n`;
+
+  return { subject, html, text };
+}
+
+/**
+ * TEMP: Send a dummy alert email to a test address for verification
+ */
+export async function sendDummyAlertEmailForTest() {
+  const { subject, html, text } = generateAlertEmailTemplate({
+    alarmTypeId: 3, // Continuous Driving
+    vehicleNumber: "AP29TB3613",
+    tripId: "M5090535",
+    location: "SH 2, Chityala, Telangana\n14 m from Andhra Pradesh Grameena Vikas Bank, Pin-508114 (India)",
+    alertTime: "12/03/2025 21:16:10",
+    driverName: "VENKATESH",
+    driverMobile: "9553029201",
+    vendorName: "GTROPY",
+    customerName: "ASOB",
+    alarmValue: 3, // 3 hours
+    description: "Continuous driving detected for more than 3 hours.",
+    additionalInfo: undefined,
+  });
+
+  const mailOptions = {
+    from: EMAIL_CONFIG.from,
+    to: "nayan11404@gmail.com",
+    subject,
+    text,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Dummy alert email sent to nayan11404@gmail.com");
+  } catch (error) {
+    console.error("❌ Failed to send dummy alert email:", error);
+  }
+}
+
+

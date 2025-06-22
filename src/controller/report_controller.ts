@@ -28,32 +28,74 @@ export async function getDashboardReport(
   tripStatus: 'active' | 'inactive' | 'all'
 ) {
   try {
-    // Get all vehicles from specified groups
+    // Get all vehicles from specified groups (remove vehicleStatus and groupName from select)
     const vehicleGroupQuery = db
       .select({
         vehicleId: entity.id,
         vehicleNumber: entity.vehicleNumber,
-        vehicleStatus: entity.status,
-        groupId: group.id,
-        groupName: group.group_name
+        groupId: group.id
       })
       .from(entity)
       .innerJoin(group_entity, eq(entity.id, group_entity.entity_id))
       .innerJoin(group, eq(group_entity.group_id, group.id))
       .where(inArray(group.id, vehicleGroups));
 
-    const vehicles = await vehicleGroupQuery;
+    const vehiclesRaw = await vehicleGroupQuery;
+
+    // Deduplicate vehicles by vehicleNumber
+    const seenVehicleNumbers = new Set<string>();
+    const vehicles = vehiclesRaw.filter(v => {
+      if (seenVehicleNumbers.has(v.vehicleNumber)) return false;
+      seenVehicleNumbers.add(v.vehicleNumber);
+      return true;
+    });
 
     // Get latest GPS data for each vehicle
     const dashboardData = await Promise.all(
       vehicles.map(async (vehicle) => {
         // Get latest GPS record for this vehicle
+
+        let tripStatusValue: string = '';
+        try {
+          // Find equipment for this vehicle
+          const [equip] = await db.select().from(require('../db/schema').equipment)
+            .where(eq(require('../db/schema').equipment.equipment_id, vehicle.vehicleNumber)).limit(1);
+          if (equip && equip.shipment_id) {
+            // Find shipment/trip for this equipment
+            const [trip] = await db.select().from(require('../db/schema').shipment)
+              .where(eq(require('../db/schema').shipment.id, equip.shipment_id)).limit(1);
+            tripStatusValue = trip?.status ?? '';
+          }
+        } catch (e) {
+          tripStatusValue = '';
+        }
+
+        // Trip status filter (use tripStatusValue, not status)
+        if (tripStatus === 'active') {
+          const activeTripStatuses = ['at_stop_delivery', 'at_stop_pickup', 'in_transit'];
+          if (!activeTripStatuses.includes(tripStatusValue)) {
+            return null;
+          }
+        } else if (tripStatus === 'inactive') {
+          const activeTripStatuses = ['at_stop_delivery', 'at_stop_pickup', 'in_transit'];
+          if (activeTripStatuses.includes(tripStatusValue)) {
+            return null;
+          }
+        }
+
+        console.log(`Processing vehicle: ${vehicle.vehicleNumber}, Trip Status: ${tripStatusValue}`);
+
+
+
         const latestGps = await db
           .select()
           .from(gps_schema)
           .where(eq(gps_schema.trailerNumber, vehicle.vehicleNumber))
           .orderBy(desc(gps_schema.gpstimestamp))
           .limit(1);
+
+
+          
 
         if (latestGps.length === 0) {
           return {
@@ -65,12 +107,12 @@ export async function getDashboardReport(
             gpsTime: null,
             gprsTime: null,
             speed: 0,
-            status: 'inactive',
+            status: 'No Data', // Use same as live.ts
+            trip_status: tripStatusValue,
             gpsPingCount: 0,
             power: 'Unknown',
             battery: 'Unknown',
-            ignitionStatus: 'OFF' as const,
-            groupName: vehicle.groupName
+            ignitionStatus: 'OFF' as const
           };
         }
 
@@ -89,39 +131,42 @@ export async function getDashboardReport(
           ? await reverseGeocode(gpsData.latitude, gpsData.longitude)
           : gpsData.address || 'Unknown Location';
 
-        // Determine vehicle status based on trip status filter
-        const ignitionStatus = getIgnitionStatus(
-          gpsData.digitalInput1 ?? undefined,
-          gpsData.digitalInput2 ?? undefined,
-          gpsData.digitalInput3 ?? undefined
-        );
-
-        const isActive = ignitionStatus === 'ON' && (gpsData.speed || 0) > 0;
-        const vehicleStatus = isActive ? 'active' : 'inactive';
-
-        // Filter based on trip status
-        if (tripStatus !== 'all' && vehicleStatus !== tripStatus) {
-          return null;
+        // Status logic same as live.ts
+        let status = 'No Data';
+        if (gpsData.gpstimestamp) {
+          const lastPingTime = Number(gpsData.gpstimestamp) * 1000;
+          const diffHours = (Date.now() - lastPingTime) / (1000 * 60 * 60);
+          if (diffHours <= 3) {
+            status = 'Active';
+          } else {
+            status = 'No Update';
+          }
         }
-        let todayPingCount = 0;
 
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
-        const endOfDay = startOfDay + 86400;
+        // Get equipment and shipment (trip) details for trip status
+        // Try to get trip_status from equipment/shipment like in live.ts
+        
+        // For 'all', include everything
+
+        let todayPingCount = 0;
+        const now = Math.floor(Date.now() / 1000);
+        const startOfDay = new Date(now * 1000);
+        startOfDay.setHours(0, 0, 0, 0);
+        const startOfDayTimestamp = Math.floor(startOfDay.getTime() / 1000);
+        const endOfDayTimestamp = startOfDayTimestamp + 86400;
 
         const gpsToday = await db.select()
           .from(gps_schema)
           .where(
             and(
               eq(gps_schema.trailerNumber, vehicle.vehicleNumber),
-              gte(gps_schema.gpstimestamp, startOfDay),
-              lt(gps_schema.gpstimestamp, endOfDay)
+              gte(gps_schema.gpstimestamp, startOfDayTimestamp),
+              lt(gps_schema.gpstimestamp, endOfDayTimestamp)
             )
           )
           .orderBy(asc(gps_schema.gpstimestamp));
 
         todayPingCount = gpsToday.length;
-
 
         return {
           vehicleNumber: vehicle.vehicleNumber,
@@ -132,12 +177,12 @@ export async function getDashboardReport(
           gpsTime: gpsData.gpstimestamp != null ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : null,
           gprsTime: gpsData.gprstimestamp != null ? formatDate(new Date(gpsData.gprstimestamp * 1000).toISOString()) : null,
           speed: gpsData.speed || 0,
-          status: vehicleStatus,
+          status, // vehicle status
+          trip_status: tripStatusValue, // add trip_status for frontend filtering
           gpsPingCount: todayPingCount,
           power: gpsData.powerSupplyVoltage || 'Unknown',
           battery: gpsData.internalBatteryLevel || 'Unknown',
-          ignitionStatus,
-          groupName: vehicle.groupName
+          ignitionStatus: gpsData.digitalInput1 === 1 ? 'ON' : 'OFF'
         };
       })
     );
@@ -151,7 +196,7 @@ export async function getDashboardReport(
   }
 }
 
-// All Positions Report
+// All Positions Report - Remove groupName from return
 export async function getAllPositionsReport(
   vehicleGroups: number[],
   startDate: string, // ISO string format
@@ -163,13 +208,12 @@ export async function getAllPositionsReport(
     const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
     const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000);
 
-    // Get all vehicles from specified groups
+    // Get all vehicles from specified groups (remove groupName from select)
     let vehicleQuery = db
       .select({
         vehicleId: entity.id,
         vehicleNumber: entity.vehicleNumber,
-        groupId: group.id,
-        groupName: group.group_name
+        groupId: group.id
       })
       .from(entity)
       .innerJoin(group_entity, eq(entity.id, group_entity.entity_id))
@@ -182,8 +226,7 @@ export async function getAllPositionsReport(
         .select({
           vehicleId: entity.id,
           vehicleNumber: entity.vehicleNumber,
-          groupId: group.id,
-          groupName: group.group_name
+          groupId: group.id
         })
         .from(entity)
         .innerJoin(group_entity, eq(entity.id, group_entity.entity_id))
@@ -196,92 +239,76 @@ export async function getAllPositionsReport(
         );
     }
 
-    const vehicles = await vehicleQuery;
+    const vehiclesRaw = await vehicleQuery;
 
-    // Get all GPS positions for each vehicle in the date range
-    const allPositionsData = await Promise.all(
-      vehicles.map(async (vehicle) => {
-        // Get all GPS records for this vehicle in the date range
-        const gpsRecords = await db
-          .select()
-          .from(gps_schema)
-          .where(
-            and(
-              eq(gps_schema.trailerNumber, vehicle.vehicleNumber),
-              gte(gps_schema.gpstimestamp, startTimestamp),
-              lte(gps_schema.gpstimestamp, endTimestamp)
-            )
+    // Deduplicate vehicles by vehicleNumber
+    const seenVehicleNumbers = new Set<string>();
+    const vehicles = vehiclesRaw.filter(v => {
+      if (seenVehicleNumbers.has(v.vehicleNumber)) return false;
+      seenVehicleNumbers.add(v.vehicleNumber);
+      return true;
+    });
+
+    // Grouped result: { vehicleNumber, trailPoints: [...] }
+    const groupedPositions: any[] = [];
+
+    for (const vehicle of vehicles) {
+      // Get all GPS records for this vehicle in the date range
+      const gpsRecords = await db
+        .select()
+        .from(gps_schema)
+        .where(
+          and(
+            eq(gps_schema.trailerNumber, vehicle.vehicleNumber),
+            gte(gps_schema.gpstimestamp, startTimestamp),
+            lte(gps_schema.gpstimestamp, endTimestamp)
           )
-          .orderBy(desc(gps_schema.gpstimestamp));
+        )
+        .orderBy(desc(gps_schema.gpstimestamp));
 
-        // Get vendor information for this vehicle
-        const vendorData = await db
-          .select({ vendorName: vendor.name })
-          .from(vendor)
-          .innerJoin(entity_vendor, eq(vendor.id, entity_vendor.vendor_id))
-          .where(eq(entity_vendor.entity_id, vehicle.vehicleId))
-          .limit(1);
+      // Get vendor information for this vehicle
+      const vendorData = await db
+        .select({ vendorName: vendor.name })
+        .from(vendor)
+        .innerJoin(entity_vendor, eq(vendor.id, entity_vendor.vendor_id))
+        .where(eq(entity_vendor.entity_id, vehicle.vehicleId))
+        .limit(1);
 
-        const vehicleVendor = vendorData[0]?.vendorName || 'Unknown';
-        // let todayPingCount = 0;
+      const vehicleVendor = vendorData[0]?.vendorName || 'Unknown';
 
-        // const now = new Date();
-        // const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000;
-        // const endOfDay = startOfDay + 86400;
+      // Process each GPS record and add to trailPoints array
+      const trailPoints = [];
+      for (const gpsData of gpsRecords) {
+        // Get location from reverse geocoding
+        const address = gpsData.latitude && gpsData.longitude
+          ? await reverseGeocode(gpsData.latitude, gpsData.longitude)
+          : gpsData.address || 'Unknown Location';
 
-        // const gpsToday = await db.select()
-        //   .from(gps_schema)
-        //   .where(
-        //     and(
-        //       eq(gps_schema.trailerNumber, vehicle.vehicleNumber),
-        //       gte(gps_schema.gpstimestamp, startOfDay),
-        //       lt(gps_schema.gpstimestamp, endOfDay)
-        //     )
-        //   )
-        //   .orderBy(asc(gps_schema.gpstimestamp));
+        trailPoints.push({
+          vendor: vehicleVendor,
+          deviceId: gpsData.deviceId,
+          timestamp: gpsData.timestamp,
+          gpsTime: gpsData.gpstimestamp != null ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : null,
+          gprsTime: gpsData.gprstimestamp != null ? formatDate(new Date(gpsData.gprstimestamp * 1000).toISOString()) : null,
+          power: gpsData.powerSupplyVoltage || 'Unknown',
+          battery: gpsData.internalBatteryLevel || 'Unknown',
+          ignitionStatus: gpsData.digitalInput1 === 1 ? 'ON' : 'OFF',
+          latitude: gpsData.latitude,
+          longitude: gpsData.longitude,
+          speed: gpsData.speed || 0,
+          address,
+          heading: gpsData.heading || 0,
+          createdAt: gpsData.created_at
+        });
+      }
 
-        // todayPingCount = gpsToday.length;
+      groupedPositions.push({
+        vehicleNumber: vehicle.vehicleNumber,
+        trailPoints
+      });
+    }
 
-        // Process each GPS record
-        const processedRecords = await Promise.all(
-          gpsRecords.map(async (gpsData) => {
-            // Get location from reverse geocoding
-            const address = gpsData.latitude && gpsData.longitude
-              ? await reverseGeocode(gpsData.latitude, gpsData.longitude)
-              : gpsData.address || 'Unknown Location';
-
-            return {
-              vehicleNumber: vehicle.vehicleNumber,
-              groupName: vehicle.groupName,
-              vendor: vehicleVendor,
-              deviceId: gpsData.deviceId,
-              timestamp: gpsData.timestamp,
-              gpsTime: gpsData.gpstimestamp != null ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : null,
-              gprsTime: gpsData.gprstimestamp != null ? formatDate(new Date(gpsData.gprstimestamp * 1000).toISOString()) : null,
-              //gpsPingCount: todayPingCount,
-              power: gpsData.powerSupplyVoltage || 'Unknown',
-              battery: gpsData.internalBatteryLevel || 'Unknown',
-              ignitionStatus: getIgnitionStatus(
-                gpsData.digitalInput1 ?? undefined,
-                gpsData.digitalInput2 ?? undefined,
-                gpsData.digitalInput3 ?? undefined
-              ),
-              latitude: gpsData.latitude,
-              longitude: gpsData.longitude,
-              speed: gpsData.speed || 0,
-              address,
-              heading: gpsData.heading || 0,
-              createdAt: gpsData.created_at
-            };
-          })
-        );
-
-        return processedRecords;
-      })
-    );
-
-    // Flatten the array of arrays
-    return allPositionsData.flat();
+    return groupedPositions;
 
   } catch (error) {
     console.error('Error in getAllPositionsReport:', error);
@@ -300,7 +327,17 @@ export async function handleDashboardReport(req: any, res: any) {
       });
     }
 
-    const report = await getDashboardReport(vehicleGroups, tripStatus);
+    let report = await getDashboardReport(vehicleGroups, tripStatus);
+
+    // Apply trip status filter here as well (defensive, in case frontend sends all and wants to filter here)
+    if (tripStatus === 'active') {
+      const activeStatuses = ['at_stop_delivery', 'at_stop_pickup', 'in_transit'];
+      report = report.filter((v: any) => activeStatuses.includes(v.trip_status));
+    } else if (tripStatus === 'inactive') {
+      const activeStatuses = ['at_stop_delivery', 'at_stop_pickup', 'in_transit'];
+      report = report.filter((v: any) => !activeStatuses.includes(v.trip_status));
+    }
+    // For 'all', do not filter
 
     res.json({
       success: true,
@@ -367,5 +404,5 @@ function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
 }
 
 
-// dashboard report me vehicle status daalna , 
+// dashboard report me vehicle status daalna ,
 

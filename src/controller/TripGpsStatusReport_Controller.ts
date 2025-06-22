@@ -235,7 +235,7 @@ export class TripGpsStatusReportController {
 
     // Add consent information if available
     if (consentInfo) {
-      commonInfo.consent_status = consentInfo.current_consent;
+      commonInfo.consent_status = consentInfo.current_consent ?? undefined;
       commonInfo.last_updated_time = consentInfo.updated_at?.toISOString() || '';
       commonInfo.operator = consentInfo.operator;
     }

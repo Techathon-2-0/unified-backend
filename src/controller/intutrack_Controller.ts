@@ -5,14 +5,20 @@ import { drizzle } from 'drizzle-orm/mysql2';
 
 const db = drizzle(process.env.DATABASE_URL!);
 
+export const getIndianTime = () => {
+  const now = new Date();
+  const indianTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // Add 5 hours 30 minutes
+  return indianTime;
+};
+
 export const refreshConsentStatus = async (req: Request, res: Response) => {
   try {
     const shipmentId = req.query.shipment_id as string;
-    
+
     if (!shipmentId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Shipment ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Shipment ID is required'
       });
     }
 
@@ -28,9 +34,9 @@ export const refreshConsentStatus = async (req: Request, res: Response) => {
       .limit(1);
 
     if (!shipmentData.length || !shipmentData[0].driver_mobile_no) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Driver mobile number not found for this shipment' 
+      return res.status(404).json({
+        success: false,
+        message: 'Driver mobile number not found for this shipment'
       });
     }
 
@@ -56,7 +62,7 @@ export const refreshConsentStatus = async (req: Request, res: Response) => {
     }
 
     const apiData = await intutrackResponse.json();
-    
+
     if (!apiData || !Array.isArray(apiData) || apiData.length === 0) {
       return res.status(404).json({
         success: false,
@@ -78,9 +84,10 @@ export const refreshConsentStatus = async (req: Request, res: Response) => {
       await db
         .update(intutrack_relation)
         .set({
-          current_consent: consentData.current_consent,
-          consent: consentData.consent,
-          operator: consentData.operator
+          current_consent: consentData.current_consent || 'N',
+          consent: consentData.consent || 'N',
+          operator: consentData.operator || '',
+          updated_at: getIndianTime() // update timestamp
         })
         .where(eq(intutrack_relation.phone_number, driverMobile));
     } else {
@@ -128,11 +135,11 @@ export const refreshConsentStatus = async (req: Request, res: Response) => {
 export const getConsentStatus = async (req: Request, res: Response) => {
   try {
     const shipmentId = req.query.shipment_id as string;
-    
+
     if (!shipmentId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Shipment ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Shipment ID is required'
       });
     }
 
@@ -147,9 +154,9 @@ export const getConsentStatus = async (req: Request, res: Response) => {
       .limit(1);
 
     if (!shipmentData.length || !shipmentData[0].driver_mobile_no) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Driver mobile number not found for this shipment' 
+      return res.status(404).json({
+        success: false,
+        message: 'Driver mobile number not found for this shipment'
       });
     }
 
