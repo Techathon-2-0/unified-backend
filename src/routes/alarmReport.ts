@@ -12,7 +12,7 @@ alarmReportRouter.post('/alarm-report', async (req: Request, res: Response) => {
     try {
         const alarmReport = await getAlarmReport(req, res);
         res.json(alarmReport);
-        } catch (error) {
+    } catch (error) {
         console.error('Error generating alarm report:', error);
         res.status(500).json({ error: 'Failed to generate alarm report' });
     }
