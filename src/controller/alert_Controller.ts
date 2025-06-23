@@ -237,19 +237,21 @@ export const getAlertsByUserAccess = async (req: Request, res: Response) => {
     
     // Find alerts related to these entities
     const userAlerts = await db
-      .select({
+      .selectDistinct({
         alertId: alert.id,
         status: alert.status,
         alarmId: alert.alert_type,
-        createdAt: alert.created_at
+        createdAt: alert.created_at,
+        severity_type: alarm.alarm_category
       })
       .from(alert)
       .innerJoin(alarm_alert, eq(alert.id, alarm_alert.alert_id))
       .innerJoin(alarm_group, eq(alarm_alert.alarm_id, alarm_group.alarm_id))
       .innerJoin(group_entity, eq(alarm_group.vehicle_group_id, group_entity.group_id))
+      .innerJoin(alarm, eq(alert.alert_type, alarm.id))
       .where(inArray(group_entity.entity_id, entityIds))
       .orderBy(alert.created_at);
-    
+
     return res.status(200).json({
       success: true,
       count: userAlerts.length,
@@ -465,13 +467,18 @@ export const getAlertsByShipment = async (req: Request, res: Response) => {
       const canManuallyClose = alarmTypeId && [1, 2, 3, 4].includes(alarmTypeId) && alertItem.alert_status === 1;
       
       let alertTypeName = "Unknown";
+      // *****************
       switch (alarmTypeId) {
-        case 1: alertTypeName = "Overspeeding"; break;
-        case 2: alertTypeName = "Continuous driving"; break;
-        case 3: alertTypeName = "Route deviation"; break;
-        case 4: alertTypeName = "Stoppage"; break;
+        case 1: alertTypeName = "Stoppage"; break;
+        case 2: alertTypeName = "Overspeeding"; break;
+        case 3: alertTypeName = "Continuous Driving"; break;
+        case 4: alertTypeName = "No GPS Feed"; break;
+        case 5: alertTypeName = "Reached Stop"; break;
+        case 6: alertTypeName = "Geofence"; break;
+        case 7: alertTypeName = "Route Deviation"; break;
         default: alertTypeName = alertItem.alarm_description || "Unknown";
       }
+      // *************
       
       return {
         alert_id: alertItem.alert_id,

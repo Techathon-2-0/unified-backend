@@ -1,6 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { getAlarmReport } from '../controller/alarm_report_Controller';
-import { alarm } from '../db/schema';
 
 const alarmReportRouter = express.Router();
 

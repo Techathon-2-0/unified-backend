@@ -37,7 +37,7 @@ alertRouter.put('/alerts/:id', async (req, res) => {
     }
 });
 
-alertRouter.get('alerts/shipment/:shipmentId', async (req, res) => {
+alertRouter.get('/alerts/shipment/:shipmentId', async (req, res) => {
     try {
         const shipmentId = req.params.shipmentId;
         const alerts = await getAlertsByShipment(req, res);

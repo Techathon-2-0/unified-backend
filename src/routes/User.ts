@@ -8,7 +8,6 @@ import {
   deleteUser,
   loginUser,
   getUserbyUsername,
-  changepassword,
   logoutUser,
 } from '../controller/UserController';
 import { validateUserSession } from '../middleware/sessionValidator';
@@ -57,9 +56,6 @@ userRouter.post('/user', async (req, res) => {
     res.send({ message: 'User created successfully', data });
 });
 
-userRouter.put('/user/updatepass', async (req, res) => {
-    await changepassword(req, res);
-});
 
 //working
 userRouter.put('/user/:id', async (req, res) => {

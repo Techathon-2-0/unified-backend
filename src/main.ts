@@ -35,8 +35,6 @@ app.use(bodyParser.xml({
     explicitArray: false, // Prevents wrapping every value in an array
   }
 }));
-
-// app.use(cors());
 const allowedOrigins = [
   'http://localhost:5173', // Local dev
   'https://unifiedgps.mlldev.com',
@@ -51,11 +49,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // app.options('*', cors(corsOptions));
 app.use(cookieParser());
-
-// app.use(cors({
-//   origin: "*",
-//   credentials: true,
-// }));
 
 app.use(express.json());
 // app.use(cookieParser());
@@ -86,8 +79,7 @@ app.use(intutrackRouter)
 app.use(alertRouter);
 app.use(TrailRouter);
 app.use(reportRouter);
-app.use(alarmReportRouter);
-
+app.use(alarmReportRouter)
 
 app.listen(port,async () => {
   console.log(`Example app listening on port ${port}`)

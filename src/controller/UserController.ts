@@ -303,9 +303,6 @@ export const updateUser = async (req: Request, res: Response) => {
     const vehiclegrp = req.body.vehiclegroup || [];
     const geofencegrp = req.body.geofencegroup || [];
     const custgrp = req.body.custgrp || [];
-    // console.log('Creating user with data:', req.body);
-    // res.status(201).json({
-      // message: 'User created successfully'});
     // Check if username or email already exists
     const existingUser = await db.select().from(usersTable).where(eq(usersTable.id, parseInt(id)))
     if( existingUser.length === 0) {
@@ -468,7 +465,6 @@ export const loginUser = async (req :Request,res:Response) => {
       vehiclegrp: [] as string[],
       geofencegrp: [] as string[],
       customergrp: [] as string[],
-
     };
     // Get user's role
     const userRole = await db.select().from(user_role).where(eq(user_role.user_id, user[0].id));
@@ -637,36 +633,6 @@ export const getUserbyUsername = async (searchTerm:string) => {
   }
 }
 
-export const changepassword = async (req: Request, res: Response) => {
-  try{
-    const { oldPassword, newPassword ,id} = req.body;
-
-    // Find user by ID
-    const user = await db.select().from(usersTable).where(eq(usersTable.id, parseInt(id)));
-    
-    if (user.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Compare old password
-    const isOldPasswordValid = await bcrypt.compare(oldPassword, user[0].password);
-    
-    if (!isOldPasswordValid) {
-      return res.status(400).json({ message: 'Old password is incorrect' });
-    }
-
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update user's password
-    await db.update(usersTable).set({ password: hashedNewPassword }).where(eq(usersTable.id, parseInt(id)));
-
-    res.status(200).json({ message: 'Password changed successfully' });
-  }catch(error){
-    console.error('Error changing password:', error);
-    res.status(500).json({ message: 'Failed to change password' });
-  }
-}
 
 export async function logoutUser(req: Request, res: Response){
   try {
@@ -678,6 +644,8 @@ export async function logoutUser(req: Request, res: Response){
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
+
+    console.log()
 
     await axios.post(`${process.env.SSO_URL}/oauth/revoke/${token}`)
 
