@@ -117,7 +117,7 @@ export async function getAllGroups(req: Request, res: Response) {
                     })
                     .from(group_entity)
                     .innerJoin(entity, eq(group_entity.entity_id, entity.id))
-                    .where(eq(group_entity.group_id, grp.id));
+                    .where(eq(group_entity.group_id, grp.id)).limit(limit).offset(offset);
                 
                 return {
                     ...grp,

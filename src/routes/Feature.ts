@@ -40,14 +40,33 @@ featureRouter.post('/insertgps', async (req, res) => {
 
     try {
         const gpsData = req.body; // Assuming the GPS data is sent in the request body
-        // console.log(gpsData);
+        // console.log(gpsData.data);
         // if (!gpsData) {
         //     return res.status(400).json({ message: 'No GPS data provided' });
         // }
         // console.log('Received GPS data:', gpsData);
         // const rawdata = JSON.stringify(gpsData.messages);
-        const result = await insertGpsData(gpsData);
-        res.status(201).json({ message: 'GPS data inserted successfully'});
+        const result = await insertGpsData(gpsData.data);
+        res.status(201).json({ message: 'GPS data inserted successfully',gpsData});
+    } catch (error) {
+        console.error('Error inserting GPS data:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        res.status(500).json({ message: 'Failed to insert GPS data', error: errorMessage });
+    } 
+});
+
+featureRouter.post('/insertgpsinthexml', async (req, res) => {
+
+    try {
+        const gpsData = req.body; // Assuming the GPS data is sent in the request body
+        // console.log(gpsData.data);
+        // if (!gpsData) {
+        //     return res.status(400).json({ message: 'No GPS data provided' });
+        // }
+        // console.log('Received GPS data:', gpsData);
+        // const rawdata = JSON.stringify(gpsData.messages);
+        const result = await insertGpsData(gpsData.data.GPSData);
+        res.status(201).json({ message: 'GPS data inserted successfully',gpsData});
     } catch (error) {
         console.error('Error inserting GPS data:', error);
         const errorMessage = error instanceof Error ? error.message : String(error);

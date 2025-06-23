@@ -29,6 +29,7 @@ import { ne, eq, inArray, and, gte, lt, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { formatDate, reverseGeocode, haversine } from "../utilities/geofunc";
 import bcrypt from "bcryptjs";
+import { start } from "repl";
 
 const db = drizzle(process.env.DATABASE_URL!);
 
@@ -683,10 +684,10 @@ export async function getAllTrips(
             current_location_address = "-";
             last_gps_ping = lastGpsBeforeInactive.gpstimestamp
               ? formatDate(
-                  new Date(
-                    Number(lastGpsBeforeInactive.gpstimestamp) * 1000
-                  ).toISOString()
-                )
+                new Date(
+                  Number(lastGpsBeforeInactive.gpstimestamp) * 1000
+                ).toISOString()
+              )
               : "";
             last_gps_vendor = lastGpsBeforeInactive.GPSVendor || "";
           } else {
@@ -697,7 +698,7 @@ export async function getAllTrips(
             last_gps_vendor = "";
           }
         } else {
- 
+
           if (
             latestGps &&
             latestGps.latitude != null &&
@@ -718,21 +719,20 @@ export async function getAllTrips(
             // last_gps_ping=latestGps.timestamp;
             last_gps_ping = latestGps.gpstimestamp
               ? formatDate(
-                  new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
-                )
+                new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
+              )
               : latestGps.timestamp || "";
             last_gps_vendor = latestGps.GPSVendor || "";
           }
         }
-        if (latestGps.gpstimestamp) {
+        // Fix: Only access latestGps.gpstimestamp if latestGps is defined
+        if (latestGps && latestGps.gpstimestamp) {
           const now = Date.now();
           const pingTime = Number(latestGps.gpstimestamp) * 1000;
           const diffHours = (now - pingTime) / (1000 * 60 * 60);
-          if (diffHours <= 3) {
-            vehicle_status = "Active";
-          } else {
-            vehicle_status = "No Update";
-          }
+          vehicle_status = diffHours <= 3 ? "Active" : "No Update";
+        } else {
+          vehicle_status = "No Data";
         }
         // Per-stop info
         const planned_stops = await Promise.all(
@@ -784,10 +784,10 @@ export async function getAllTrips(
             const loadingtime =
               stop.location_id != null
                 ? await db
-                    .select()
-                    .from(geofence_table)
-                    .where(eq(geofence_table.location_id, stop.location_id))
-                    .limit(1)
+                  .select()
+                  .from(geofence_table)
+                  .where(eq(geofence_table.location_id, stop.location_id))
+                  .limit(1)
                 : [];
             for (const stop of stopsRows) {
 
@@ -840,7 +840,7 @@ export async function getAllTrips(
                   status = "on_time";
                 }
               }
-              
+
               // Calculate geta (actual time taken to reach stop, if available)
               // if (stop.geta) {
               //   const getaTime = stop.geta ? new Date(stop.geta).getTime() : 0;
@@ -910,7 +910,7 @@ export async function getAllTrips(
         const statusDurations = calculateStatusDurationsFromGPS(
           allGpsRecords,
           s.start_time
-            ? Math.floor(new Date("2025-06-21T08:09:08.749Z").getTime() / 1000)
+            ? Math.floor(new Date(s.start_time).getTime() / 1000)
             : 0
         );
 
@@ -945,13 +945,11 @@ export async function getAllTrips(
           totalStoppageMs
         );
         const totalDriveTime = formatMsToHoursMinutes(totalDriveMs);
-        console.log(s.start_time);
-        const tt =
-          s.end_time && s.start_time
-            ? new Date(s.end_time).getTime() - new Date(s.start_time).getTime()
-            : Date.now() / 1000 - new Date(Number(s.start_time ?? 0)).getTime();
+        const startTime = s.start_time ? new Date(s.start_time).getTime() : 0;
+        const endTime = s.end_time ? new Date(s.end_time).getTime() : Date.now();
 
-        console.log("tt", tt);
+        const tt = endTime - startTime;
+
 
         return {
           id: s.shipment_id,
@@ -983,7 +981,7 @@ export async function getAllTrips(
           total_distance: total_distance.toFixed(2) + "km",
           total_covered_distance: covered_distance.toFixed(2) + "km",
           average_distance:
-            Number(tt) == 0
+            (typeof tt != "number" || tt === 0)
               ? "0km"
               : (Number(covered_distance) / Number(tt)).toFixed(2) + " km",
           status: s.status,
@@ -1249,7 +1247,7 @@ export async function insertData(data: any) {
       )
       .limit(1);
 
-        const getIndianTime = () => {
+    const getIndianTime = () => {
       const now = new Date();
       const indianTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // Add 5 hours 30 minutes
       return indianTime;
@@ -1270,7 +1268,6 @@ export async function insertData(data: any) {
         address: address || "",
       });
     }
-
 
     const stopId = await db
       .insert(stop)
@@ -1515,6 +1512,8 @@ function calculateStatusDurationsFromGPS(
 ): string {
   if (!gpsRecords || gpsRecords.length === 0) return "0h";
 
+  console.log(tripStartTime);
+
   // Sort GPS records by timestamp
   let result = 0;
   gpsRecords.sort((a, b) => {
@@ -1524,9 +1523,10 @@ function calculateStatusDurationsFromGPS(
   });
   if (gpsRecords.length === 0) return "0";
   // console.log("GPS Records:", gpsRecords);
-  if (
+  // console.log("Trip Start Time:", tripStartTime);
+  if (tripStartTime) {
     Number(gpsRecords[gpsRecords.length - 1].timestamp) < Number(tripStartTime)
-  ) {
+  } else {
     return "0h";
   }
   result +=
@@ -1680,31 +1680,31 @@ function calculateTotalStoppageTimeFromGPS(
 function parseTimeStringToMs(timeString: string): number {
   const timeRegex = /(?:(\d+)d)?\s*(?:(\d+)h)?\s*(?:(\d+)m)?/;
   const match = timeString.match(timeRegex);
-  
+
   if (!match) return 0;
-  
+
   const days = parseInt(match[1] || '0', 10);
   const hours = parseInt(match[2] || '0', 10);
   const minutes = parseInt(match[3] || '0', 10);
-  
+
   return (days * 24 * 60 * 60 * 1000) + (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
 }
 
 function calculateTotalDetentionTime(
-  stops: Array<{ 
-    entry_time?: string | Date; 
+  stops: Array<{
+    entry_time?: string | Date;
     exit_time?: string | Date;
     detention_time?: string | number;
   }>,
   totalStoppageMs: number
 ): number {
   let detentionMs = 0;
-  
+
   // Check if stops have detention_time field in schema
-  const hasDetentionTimeInSchema = stops.some(stop => 
+  const hasDetentionTimeInSchema = stops.some(stop =>
     stop.detention_time !== undefined && stop.detention_time !== null
   );
-  
+
   if (hasDetentionTimeInSchema) {
     // Sum detention_time from stops schema
     for (const stop of stops) {
@@ -1717,7 +1717,7 @@ function calculateTotalDetentionTime(
         }
       }
     }
-  }else {
+  } else {
     // Fallback to calculating from entry/exit times
     for (const stop of stops) {
       if (stop.entry_time && stop.exit_time) {
@@ -1729,7 +1729,7 @@ function calculateTotalDetentionTime(
       }
     }
   }
-return detentionMs + totalStoppageMs
+  return detentionMs + totalStoppageMs
 }
 
 function calculateTotalDriveTime(
@@ -1870,7 +1870,7 @@ export async function getTripsByCustomerGroups(
       .where(inArray(customers.id, customerIds));
 
     const customerNames = new Set(customersData.map((c) => c.customer_name));
-    
+
     // 3. Determine status filter
     let statusFilter: string[] | null = null;
 
@@ -2062,19 +2062,19 @@ export async function getTripsByCustomerGroups(
             current_location_coordinates = ["-", "-"];
             last_gps_ping = lastGpsBeforeInactive.gpstimestamp
               ? formatDate(
-                  new Date(
-                    Number(lastGpsBeforeInactive.gpstimestamp) * 1000
-                  ).toISOString()
-                )
+                new Date(
+                  Number(lastGpsBeforeInactive.gpstimestamp) * 1000
+                ).toISOString()
+              )
               : "";
             last_gps_vendor = lastGpsBeforeInactive.GPSVendor || "";
             gps_time = last_gps_ping;
             gprs_time = lastGpsBeforeInactive.gprstimestamp
               ? formatDate(
-                  new Date(
-                    Number(lastGpsBeforeInactive.gprstimestamp) * 1000
-                  ).toISOString()
-                )
+                new Date(
+                  Number(lastGpsBeforeInactive.gprstimestamp) * 1000
+                ).toISOString()
+              )
               : "";
             // vehicle_status = "Inactive";
           } else {
@@ -2085,7 +2085,6 @@ export async function getTripsByCustomerGroups(
             last_gps_vendor = "";
             gps_time = "";
             gprs_time = "";
-            // vehicle_status = "No Data";
           }
         } else {
           // For active trips, use the latest GPS
@@ -2109,23 +2108,25 @@ export async function getTripsByCustomerGroups(
 
             last_gps_ping = latestGps.gpstimestamp
               ? formatDate(
-                  new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
-                )
+                new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
+              )
               : "";
             last_gps_vendor = latestGps.GPSVendor || "";
             gps_time = last_gps_ping;
             gprs_time = latestGps.gprstimestamp
               ? formatDate(
-                  new Date(Number(latestGps.gprstimestamp) * 1000).toISOString()
-                )
+                new Date(Number(latestGps.gprstimestamp) * 1000).toISOString()
+              )
               : "";
           }
         }
-        if (latestGps.gpstimestamp) {
+        if (latestGps && latestGps.gpstimestamp) {
           const now = Date.now();
           const pingTime = Number(latestGps.gpstimestamp) * 1000;
           const diffHours = (now - pingTime) / (1000 * 60 * 60);
           vehicle_status = diffHours <= 3 ? "Active" : "No Update";
+        } else {
+          vehicle_status = "No Data";
         }
         // Calculate distances
         const routePoints: Array<{ lat: number; lng: number }> = [];
@@ -2207,44 +2208,59 @@ export async function getTripsByCustomerGroups(
         covered_distance = covered_distance / 1000;
 
         // Calculate time metrics - Fixed total time calculation
-        const tripStartTime = shipment.created_at
-          ? new Date(shipment.created_at).getTime()
+        const tripStartTime = shipment.start_time
+          ? new Date(shipment.start_time).getTime()
           : 0;
         const tripEndTime = shipment.end_time
           ? new Date(shipment.end_time).getTime()
           : Date.now();
         const totalTripTime = tripEndTime - tripStartTime;
+        console.log("Total Trip Time:", tripEndTime, tripStartTime);
 
         // Get all GPS records for stoppage calculation
         const allGpsRecords = gpsRows
           .filter(
             (row) =>
               row.trailerNumber === equip?.equipment_id &&
-              row.gpstimestamp !== null
+              row.timestamp !== null
           )
-          .sort((a, b) => Number(a.gpstimestamp) - Number(b.gpstimestamp))
+          .sort(
+            (a, b) =>
+              new Date(a.timestamp ?? 0).getTime() -
+              new Date(b.timestamp ?? 0).getTime()
+          )
           .map((row) => ({
-            latitude: row.latitude != null ? Number(row.latitude) : 0,
-            longitude: row.longitude != null ? Number(row.longitude) : 0,
-            timestamp: Number(row.gpstimestamp) * 1000,
+            ...row,
+            timestamp: row.timestamp as string | number,
           }));
 
         const totalStoppageMs =
-          calculateTotalStoppageTimeFromGPS(allGpsRecords);
+          calculateTotalStoppageTimeFromGPS(
+            allGpsRecords.map(rec => ({
+              latitude: rec.latitude != null ? Number(rec.latitude) : 0,
+              longitude: rec.longitude != null ? Number(rec.longitude) : 0,
+              timestamp: rec.timestamp,
+            }))
+          );
         const totalDetentionMs = calculateTotalDetentionTime(
           stops,
           totalStoppageMs
         );
         const totalDriveMs = calculateTotalDriveTime(
-          shipment.created_at?.toISOString(),
+          shipment.start_time === null ? undefined : shipment.start_time,
           shipment.end_time === null ? undefined : shipment.end_time,
           totalStoppageMs
         );
 
         // Status duration calculation
         const statusDurations = calculateStatusDurationsFromGPS(
-          allGpsRecords.map((rec) => ({ timestamp: rec.timestamp }))
+          allGpsRecords.map((rec) => ({ timestamp: rec.timestamp })),
+          shipment.start_time
+            ? Math.floor(new Date(shipment.start_time).getTime() / 1000)
+            : 0
         );
+
+        console.log("Status Durations:", statusDurations);
 
         // Get Intutrack data if GPS vendor is Intugine
         let intutrackData = null;
@@ -2322,6 +2338,52 @@ export async function getTripsByCustomerGroups(
               detention_time = formatMsToHoursMinutes(detentionMs);
             }
 
+            const avgSpeedKmh = 40;
+
+            // --- Status logic copied from getAllTrips ---
+            let status = "pending";
+            if (stop.exit_time) {
+              status = "completed";
+            } else if (stop.entry_time) {
+              status = "in_progress";
+            } else {
+              // Calculate ceta as ETA from current location to stop (in minutes)
+              if (
+                latestGps &&
+                latestGps.longitude &&
+                latestGps.latitude &&
+                stop.latitude &&
+                stop.longitude &&
+                avgSpeedKmh > 0
+              ) {
+                const distance = haversine(
+                  Number(latestGps.latitude),
+                  Number(latestGps.longitude),
+                  Number(stop.latitude),
+                  Number(stop.longitude)
+                );
+                const cetaMinutes = Math.round(distance / avgSpeedKmh);
+                stop.ceta = cetaMinutes.toString();
+
+                // Calculate expected arrival time
+                const now = Date.now();
+                const expectedArrival = now + cetaMinutes * 60 * 1000;
+                const plannedTime = stop.planned_departure_date
+                  ? new Date(stop.planned_departure_date).getTime()
+                  : 0;
+
+                if (plannedTime >= expectedArrival) {
+                  status = "on_time";
+                } else {
+                  status = "delayed";
+                }
+              } else {
+                stop.ceta = "0";
+                status = "on_time";
+              }
+            }
+            // --- End status logic ---
+
             return {
               planned_sequence: stop.stop_sequence,
               stop_type: stop.stop_type === "P" ? "Pickup" : "Delivery",
@@ -2334,7 +2396,7 @@ export async function getTripsByCustomerGroups(
               exit_time: stop.exit_time || "",
               loading_unloading_time,
               detention_time,
-              status: stop.status || "pending",
+              status,
             };
           })
         );

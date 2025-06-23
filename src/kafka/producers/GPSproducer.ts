@@ -19,7 +19,7 @@ async function fetchAndSend() {
   }
   try {
     const response = await axios.get(apiUrl);
-    const data = response.data.messages;
+    const data = response.data;
     // console.log(data);
     // If the API returns an array, send each item as a separate m essage 
     if(!data){

@@ -123,12 +123,19 @@ export class TripGpsStatusReportController {
         .where(
           and(
             inArray(customer_lr_detail.customer_id, customerIdList),
+            // Use shipment.start_time (with time) for filtering
             between(
-              sql`DATE(${shipment.created_at})`,
+              shipment.start_time,
               start_date,
               end_date
             ),
-            trip_status !== 'all' ? this.getTripStatusCondition(trip_status) : undefined
+            trip_status !== 'all'
+              ? (
+                  trip_status === 'active'
+                    ? sql`${shipment.status} IN ('at_stop_delivery', 'at_stop_pickup', 'in_transit')`
+                    : sql`${shipment.status} NOT IN ('at_stop_delivery', 'at_stop_pickup', 'in_transit')`
+                )
+              : undefined
           )
         )
         .groupBy(shipment.id);
@@ -175,6 +182,7 @@ export class TripGpsStatusReportController {
     // Get equipment/vehicle information
     const equipmentInfo = await db
       .select({
+        equipment_id: equipment.equipment_id,
         vehicle_name: equipment.vehicle_name,
         service_provider_alias_value: equipment.service_provider_alias_value
       })
@@ -225,7 +233,8 @@ export class TripGpsStatusReportController {
       shipment_id: shipmentData.shipment_external_id,
       trip_start_time: shipmentData.start_time || '',
       trip_end_time: shipmentData.end_time || '',
-      vehicle_number: equipmentInfo.length > 0 ? equipmentInfo[0].vehicle_name || '' : '',
+      // Use equipment_id as vehicle_number
+      vehicle_number: equipmentInfo.length > 0 ? equipmentInfo[0].equipment_id || '' : '',
       origin: shipmentData.start_location || '',
       destination: shipmentData.end_location || '',
       service_provider: equipmentInfo.length > 0 ? equipmentInfo[0].service_provider_alias_value || '' : '',
@@ -270,13 +279,14 @@ export class TripGpsStatusReportController {
     // Get vehicle number for GPS tracking
     const vehicleInfo = await db
       .select({
-        vehicle_name: equipment.vehicle_name
+        equipment_id: equipment.equipment_id
       })
       .from(equipment)
       .where(eq(equipment.shipment_id, shipmentId))
       .limit(1);
 
-    const vehicleNumber = vehicleInfo.length > 0 && vehicleInfo[0].vehicle_name ? vehicleInfo[0].vehicle_name : '';
+    // Use equipment_id as vehicle number
+    const vehicleNumber = vehicleInfo.length > 0 && vehicleInfo[0].equipment_id ? vehicleInfo[0].equipment_id : '';
 
     const stopsInfo: StopInfo[] = [];
 
@@ -393,6 +403,7 @@ export class TripGpsStatusReportController {
    * Get trip status condition based on trip_status parameter
    */
   private getTripStatusCondition(tripStatus: 'active' | 'inactive') {
+    // This method is now unused, but you may keep or remove it as needed.
     if (tripStatus === 'active') {
       // Active includes: pickup, delivery, intransit
       return sql`${shipment.status} IN ('pickup', 'delivery', 'intransit', 'active')`;

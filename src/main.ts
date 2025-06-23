@@ -23,6 +23,7 @@ import TrailRouter from './routes/trail';
 import bodyParser from 'body-parser';
 import bodyParserXml from 'body-parser-xml';
 import reportRouter from './routes/report';
+import alarmReportRouter from './routes/alarmReport';
 import { authenticateToken } from './middleware/sso';
 bodyParserXml(bodyParser);
 
@@ -85,6 +86,7 @@ app.use(intutrackRouter)
 app.use(alertRouter);
 app.use(TrailRouter);
 app.use(reportRouter);
+app.use(alarmReportRouter);
 
 
 app.listen(port,async () => {

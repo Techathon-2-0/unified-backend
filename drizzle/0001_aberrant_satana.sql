@@ -1,1 +1,0 @@
-ALTER TABLE `intutrack_relation` MODIFY COLUMN `current_consent` varchar(255) DEFAULT 'Pending';

@@ -95,10 +95,17 @@ export async function insertGpsData(d: any) {
     //   console.log('⚠️ No GPS data to insert.');
     //   return;
     // }
-    const flatData = d;
+    // return d;
+    // console.log("kuch kuch:",d.GPSData);
+  const flatData = Array.isArray(d) ? d : [d];
 
-    const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
-    const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
+  if (flatData.length === 0) {
+    console.log('⚠️ No GPS data to insert.');
+    return;
+  }
+
+  const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
+  const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
 
     // 3. Bulk fetch entities and vendors
     const [entities, vendors, equipments] = await Promise.all([
