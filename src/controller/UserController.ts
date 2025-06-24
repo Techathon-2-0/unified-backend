@@ -17,7 +17,7 @@ import { eq, and, or, sql, like } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-const db = drizzle(process.env.DATABASE_URL!);
+import { db } from "../db/connection";
 //working
 export const getAllUsers = async () => {
   try {
@@ -251,16 +251,43 @@ export const getUserById = async (req: Request, res: Response) => {
 
 // working
 export const createUser = async (req: Request, res: Response) => {
-  const transaction = await db.transaction(async (tx) => {
-    try {
-      const { name, phone, username, email, password, roles, tag, usertypes } =
-        req.body;
-      const custgrp = req.body.custgrp || [];
-      const vehiclegrp = req.body.vehiclegroup || [];
-      const geofencegrp = req.body.geofencegroup || [];
-      const token =
-        req.headers.authorization?.split(" ")[1] || process.env.SSO_TOKEN;
+  try {
+    const { name, phone, username, email, password, roles, tag, usertypes } = req.body;
+    const custgrp = req.body.custgrp || [];
+    const vehiclegrp = req.body.vehiclegroup || [];
+    const geofencegrp = req.body.geofencegroup || [];
+    const token = req.headers.authorization?.split(" ")[1] || process.env.SSO_TOKEN;
 
+    // Move SSO call OUTSIDE of database transaction
+    const response = await axios.post(
+      `${process.env.SSO_URL}/createUserAndMapGroups`,
+      {
+        name: email,
+        firstName: username,
+        lastName: username,
+        ou: `${process.env.SSO_OU}`,
+        password: password,
+        groups: [`${process.env.SSO_GROUP}`],
+        permissions: [
+          roles == "admin"
+            ? `${process.env.SSO_ADMIN_PERMISSION}`
+            : `${process.env.SSO_USER_PERMISSION}`,
+        ],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      return res.status(500).json({ message: "Failed to create user in SSO" });
+    }
+
+    // Now do the database transaction
+    const result = await db.transaction(async (tx) => {
       // Check if username or email already exists
       const existingUser = await tx
         .select()
@@ -285,34 +312,6 @@ export const createUser = async (req: Request, res: Response) => {
         }
       }
 
-      // SSO creation (outside transaction)
-      const response = await axios.post(
-        `${process.env.SSO_URL}/createUserAndMapGroups`,
-        {
-          name: email,
-          firstName: username,
-          lastName: username,
-          ou: `${process.env.SSO_OU}`,
-          password: password,
-          groups: [`${process.env.SSO_GROUP}`],
-          permissions: [
-            roles == "admin"
-              ? `${process.env.SSO_ADMIN_PERMISSION}`
-              : `${process.env.SSO_USER_PERMISSION}`,
-          ],
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.status !== 200) {
-        throw new Error("Failed to create user in SSO");
-      }
-
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -332,31 +331,66 @@ export const createUser = async (req: Request, res: Response) => {
 
       const userId = newUser[0].id;
 
-      // Insert all related data within the same transaction
-      const q = await tx.select().from(role).where(eq(role.role_name, roles));
-      if (q.length > 0) {
+      // Insert role
+      const roleData = await tx.select().from(role).where(eq(role.role_name, roles));
+      if (roleData.length > 0) {
         await tx.insert(user_role).values({
           user_id: userId,
-          role_id: q[0].id,
+          role_id: roleData[0].id,
         });
       }
 
-      // Batch insert user types
-      if (usertypes.length > 0) {
-        const userTypeData = await tx
-          .select()
-          .from(usertype)
-          .where(sql`${usertype.user_type} IN ${usertypes}`);
-        const userTypeInserts = userTypeData.map((ut) => ({
-          user_id: userId,
-          user_type_id: ut.id,
-        }));
-        if (userTypeInserts.length > 0) {
-          await tx.insert(user_usertype).values(userTypeInserts);
+      // Insert user types
+      if (usertypes && usertypes.length > 0) {
+        for (const userType of usertypes) {
+          const typeData = await tx.select().from(usertype).where(eq(usertype.user_type, userType));
+          if (typeData.length > 0) {
+            await tx.insert(user_usertype).values({
+              user_id: userId,
+              user_type_id: typeData[0].id,
+            });
+          }
         }
       }
 
-      // Similar batch operations for other groups...
+      // Insert vehicle groups
+      if (vehiclegrp && vehiclegrp.length > 0) {
+        for (const vgroup of vehiclegrp) {
+          const groupData = await tx.select().from(vehiclegroup).where(eq(vehiclegroup.group_name, vgroup));
+          if (groupData.length > 0) {
+            await tx.insert(user_vehicle_group).values({
+              user_id: userId,
+              vehicle_group_id: groupData[0].id,
+            });
+          }
+        }
+      }
+
+      // Insert geofence groups
+      if (geofencegrp && geofencegrp.length > 0) {
+        for (const ggroup of geofencegrp) {
+          const groupData = await tx.select().from(geofencegroup).where(eq(geofencegroup.geo_group, ggroup));
+          if (groupData.length > 0) {
+            await tx.insert(user_geofence_group).values({
+              user_id: userId,
+              geofence_group_id: groupData[0].id,
+            });
+          }
+        }
+      }
+
+      // Insert customer groups
+      if (custgrp && custgrp.length > 0) {
+        for (const cgroup of custgrp) {
+          const groupData = await tx.select().from(customer_group).where(eq(customer_group.group_name, cgroup));
+          if (groupData.length > 0) {
+            await tx.insert(user_customer_group).values({
+              user_id: userId,
+              customer_group_id: groupData[0].id,
+            });
+          }
+        }
+      }
 
       return {
         userId,
@@ -371,25 +405,19 @@ export const createUser = async (req: Request, res: Response) => {
         geofencegrp,
         custgrp,
       };
-    } catch (error) {
-      throw error;
-    }
-  });
+    });
 
-  try {
-    const result = await transaction;
     res.status(201).json({
       message: "User created successfully",
       user: result,
     });
+
   } catch (error) {
     console.error("Error creating user:", error);
-    res
-      .status(500)
-      .json({ 
-        message: "Failed to create user", 
-        error: typeof error === "object" && error !== null && "message" in error ? (error as { message: string }).message : String(error)
-      });
+    res.status(500).json({ 
+      message: "Failed to create user", 
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 };
 
