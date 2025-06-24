@@ -676,7 +676,7 @@ export async function logoutUser(req: Request, res: Response){
 
     console.log()
 
-    await axios.post(`${process.env.SSO_URL}/oauth/revoke/${token}`)
+    await axios.delete(`${process.env.SSO_URL}/oauth/revoke/${token}`)
 
     res.status(200).json({ message: 'User logged out successfully' });
   } catch (error) {

@@ -7,8 +7,6 @@ import {
   group_entity,
   user_group,
   entity,
-  entity_vendor,
-  vendor,
   event,
   stop,
   customer_lr_detail,
@@ -22,7 +20,7 @@ import {
   alert_shipment_relation,
   alert,
   intutrack_relation,
-  usersTable,
+  usersTable,alarm,
 } from "../db/schema";
 
 import { ne, eq, inArray, and, gte, lt, desc, sql } from "drizzle-orm";
@@ -350,60 +348,64 @@ export async function getAllTrips(
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const shipmentIds = shipments.map((s) => s.id);
-
-    // Get alert counts for these shipments grouped by alert type
+    const shipmentIds = shipments.map((s) => s.id);    // Get alert counts for these shipments grouped by alert type
     const alertCounts = await db
       .select({
         shipment_id: alert_shipment_relation.shipment_id,
-        alert_type: alert.alert_type, // Assuming you have alert_type field
+        alarm_type_id: alarm.alarm_type_id, // Get the actual alarm type ID (1-7)
         alert_status: alert.status,
         count: sql<number>`count(*)`.as("count"),
       })
       .from(alert_shipment_relation)
       .leftJoin(alert, eq(alert_shipment_relation.alert_id, alert.id))
+      .leftJoin(alarm, eq(alert.alert_type, alarm.id)) // Join with alarm table to get alarm_type_id
       .where(inArray(alert_shipment_relation.shipment_id, shipmentIds))
       .groupBy(
         alert_shipment_relation.shipment_id,
-        alert.alert_type,
+        alarm.alarm_type_id,
         alert.status
       );
+
+    // Define alert type mapping based on alarm_type_id from schema
+    const alertTypeMapping: Record<number, string> = {
+      1: "stoppage",
+      2: "overspeeding", 
+      3: "continuous_driving",
+      4: "no_gps_feed",
+      5: "reached_stop",
+      6: "geofence",
+      7: "route_deviation"
+    };
 
     // Create alert counts map grouped by alert type
     const alertCountsMap: Record<
       number,
       {
-        overspeeding: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        continuous_driving: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        route_deviation: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
         stoppage: { active: number; inactive: number; manually_closed: number };
+        overspeeding: { active: number; inactive: number; manually_closed: number };
+        continuous_driving: { active: number; inactive: number; manually_closed: number };
+        no_gps_feed: { active: number; inactive: number; manually_closed: number };
+        reached_stop: { active: number; inactive: number; manually_closed: number };
+        geofence: { active: number; inactive: number; manually_closed: number };
+        route_deviation: { active: number; inactive: number; manually_closed: number };
         [key: string]: {
           active: number;
           inactive: number;
-          manually_closed?: number;
+          manually_closed: number;
         };
       }
     > = {};
 
-    // Initialize alert counts for each shipment
+    // Initialize alert counts for each shipment with all 7 alert types
     for (const shipmentId of shipmentIds) {
       alertCountsMap[shipmentId] = {
+        stoppage: { active: 0, inactive: 0, manually_closed: 0 },
         overspeeding: { active: 0, inactive: 0, manually_closed: 0 },
         continuous_driving: { active: 0, inactive: 0, manually_closed: 0 },
+        no_gps_feed: { active: 0, inactive: 0, manually_closed: 0 },
+        reached_stop: { active: 0, inactive: 0, manually_closed: 0 },
+        geofence: { active: 0, inactive: 0, manually_closed: 0 },
         route_deviation: { active: 0, inactive: 0, manually_closed: 0 },
-        stoppage: { active: 0, inactive: 0, manually_closed: 0 },
       };
     }
 
@@ -411,58 +413,28 @@ export async function getAllTrips(
     for (const alertCount of alertCounts) {
       if (
         alertCount.shipment_id &&
-        alertCount.alert_type &&
+        alertCount.alarm_type_id &&
         alertCount.alert_status !== null
       ) {
         const shipmentId = alertCount.shipment_id;
         const count = alertCount.count;
-        const alertType = String(alertCount.alert_type)
-          .toLowerCase()
-          .replace(/\s+/g, "_");
-
-        // Initialize alert type if it doesn't exist
-        if (!alertCountsMap[shipmentId][alertType]) {
-          // Check if this alert type can be manually closed
-          const manuallyClosableTypes = [
-            "overspeeding",
-            "continuous_driving",
-            "route_deviation",
-            "stoppage",
-          ];
-          if (manuallyClosableTypes.includes(alertType)) {
-            alertCountsMap[shipmentId][alertType] = {
-              active: 0,
-              inactive: 0,
-              manually_closed: 0,
-            };
-          } else {
-            alertCountsMap[shipmentId][alertType] = { active: 0, inactive: 0 };
+        
+        // Get alert type name from mapping
+        const alertType = alertTypeMapping[alertCount.alarm_type_id];
+        
+        if (alertType && alertCountsMap[shipmentId][alertType]) {
+          // Update counts based on status
+          switch (alertCount.alert_status) {
+            case 1: // Active
+              alertCountsMap[shipmentId][alertType].active = count;
+              break;
+            case 0: // Inactive
+              alertCountsMap[shipmentId][alertType].inactive = count;
+              break;
+            case 2: // Manually closed
+              alertCountsMap[shipmentId][alertType].manually_closed = count;
+              break;
           }
-        }
-
-        // Update counts based on status
-        switch (alertCount.alert_status) {
-          case 1: // Active
-            alertCountsMap[shipmentId][alertType].active = count;
-            break;
-          case 0: // Inactive
-            alertCountsMap[shipmentId][alertType].inactive = count;
-            break;
-          case 2: // Manually closed (only for specific alert types)
-            const manuallyClosableTypes = [
-              "overspeeding",
-              "continuous_driving",
-              "route_deviation",
-              "stoppage",
-            ];
-            if (
-              manuallyClosableTypes.includes(alertType) &&
-              "manually_closed" in alertCountsMap[shipmentId][alertType]
-            ) {
-              (alertCountsMap[shipmentId][alertType] as any).manually_closed =
-                count;
-            }
-            break;
         }
       }
     }
