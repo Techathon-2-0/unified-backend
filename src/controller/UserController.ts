@@ -6,6 +6,32 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 const db = drizzle(process.env.DATABASE_URL!);
+
+export async function makeuserinactive(existingUser: any,token: string) {
+      try{
+        const response=await axios.put(`${process.env.SSO_URL}/user`,{
+          name: existingUser[0].email,
+          firstName: existingUser[0].username,
+          lastName: existingUser[0].username,
+          ou: `${process.env.SSO_OU}`,
+          employeeCode: "",
+          designation: null,
+          contactNumber: "",
+          isActive: false
+        }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          })
+        return response;
+      }catch(error){
+        console.error('Error making user inactive:', error);
+        return {status: 500, data: { message: 'Failed to make user inactive' }};
+      }
+}
+
+
 //working
 export const getAllUsers = async () => {
   try {
@@ -308,6 +334,15 @@ export const updateUser = async (req: Request, res: Response) => {
     if( existingUser.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+
+    if(active=== false){
+      const ssoResponse = await makeuserinactive(existingUser,req.headers.authorization?.split(' ')[1]||"");
+      if(ssoResponse.status !== 200) {
+        console.error('Error making user inactive in SSO:', ssoResponse.data);
+        return {};
+      }
+    }
     await db.update(usersTable).set({
       name,
       phone,
@@ -394,14 +429,8 @@ export const deleteUser = async (req: Request, res: Response) => {
     if (existingUser.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }   
-    const response=await axios.delete(`${process.env.SSO_URL}/user?cn=${existingUser[0].email}`,
-       {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
-    console.log(response);
+    const response=await makeuserinactive(existingUser,token||"");
+    // console.log(response);
     if(response.status !== 200) {
       console.error('Error deleting user in SSO:', response.data);
       return res.status(500).json({ message: 'Failed to delete user in SSO' });
