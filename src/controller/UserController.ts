@@ -13,7 +13,7 @@ import {
   user_customer_group,
   customer_group,
 } from "../db/schema";
-import { eq, and, or, sql, like } from "drizzle-orm";
+import { eq, and, or, sql, like, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
@@ -258,7 +258,7 @@ export const createUser = async (req: Request, res: Response) => {
     const geofencegrp = req.body.geofencegroup || [];
     const token = req.headers.authorization?.split(" ")[1] || process.env.SSO_TOKEN;
 
-    // Move SSO call OUTSIDE of database transaction
+    // SSO call (keep as is - external API call)
     const response = await axios.post(
       `${process.env.SSO_URL}/createUserAndMapGroups`,
       {
@@ -286,7 +286,7 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(500).json({ message: "Failed to create user in SSO" });
     }
 
-    // Now do the database transaction
+    // Optimized database transaction
     const result = await db.transaction(async (tx) => {
       // Check if username or email already exists
       const existingUser = await tx
@@ -331,66 +331,75 @@ export const createUser = async (req: Request, res: Response) => {
 
       const userId = newUser[0].id;
 
+      // OPTIMIZED: Batch fetch all required IDs in parallel
+      const [roleData, userTypeData, vehicleGroupData, geofenceGroupData, customerGroupData] = await Promise.all([
+        // Get role ID
+        roles ? tx.select().from(role).where(eq(role.role_name, roles)) : Promise.resolve([]),
+        
+        // Get all user type IDs
+        usertypes.length > 0 ? tx.select().from(usertype).where(inArray(usertype.user_type, usertypes)) : Promise.resolve([]),
+        
+        // Get all vehicle group IDs
+        vehiclegrp.length > 0 ? tx.select().from(vehiclegroup).where(inArray(vehiclegroup.group_name, vehiclegrp)) : Promise.resolve([]),
+        
+        // Get all geofence group IDs
+        geofencegrp.length > 0 ? tx.select().from(geofencegroup).where(inArray(geofencegroup.geo_group, geofencegrp)) : Promise.resolve([]),
+        
+        // Get all customer group IDs
+        custgrp.length > 0 ? tx.select().from(customer_group).where(inArray(customer_group.group_name, custgrp)) : Promise.resolve([])
+      ]);
+
+      // OPTIMIZED: Batch insert all relationships
+      const insertPromises = [];
+
       // Insert role
-      const roleData = await tx.select().from(role).where(eq(role.role_name, roles));
       if (roleData.length > 0) {
-        await tx.insert(user_role).values({
+        insertPromises.push(
+          tx.insert(user_role).values({
+            user_id: userId,
+            role_id: roleData[0].id,
+          })
+        );
+      }
+
+      // Batch insert user types
+      if (userTypeData.length > 0) {
+        const userTypeValues = userTypeData.map(type => ({
           user_id: userId,
-          role_id: roleData[0].id,
-        });
+          user_type_id: type.id,
+        }));
+        insertPromises.push(tx.insert(user_usertype).values(userTypeValues));
       }
 
-      // Insert user types
-      if (usertypes && usertypes.length > 0) {
-        for (const userType of usertypes) {
-          const typeData = await tx.select().from(usertype).where(eq(usertype.user_type, userType));
-          if (typeData.length > 0) {
-            await tx.insert(user_usertype).values({
-              user_id: userId,
-              user_type_id: typeData[0].id,
-            });
-          }
-        }
+      // Batch insert vehicle groups
+      if (vehicleGroupData.length > 0) {
+        const vehicleGroupValues = vehicleGroupData.map(group => ({
+          user_id: userId,
+          vehicle_group_id: group.id,
+        }));
+        insertPromises.push(tx.insert(user_vehicle_group).values(vehicleGroupValues));
       }
 
-      // Insert vehicle groups
-      if (vehiclegrp && vehiclegrp.length > 0) {
-        for (const vgroup of vehiclegrp) {
-          const groupData = await tx.select().from(vehiclegroup).where(eq(vehiclegroup.group_name, vgroup));
-          if (groupData.length > 0) {
-            await tx.insert(user_vehicle_group).values({
-              user_id: userId,
-              vehicle_group_id: groupData[0].id,
-            });
-          }
-        }
+      // Batch insert geofence groups
+      if (geofenceGroupData.length > 0) {
+        const geofenceGroupValues = geofenceGroupData.map(group => ({
+          user_id: userId,
+          geofence_group_id: group.id,
+        }));
+        insertPromises.push(tx.insert(user_geofence_group).values(geofenceGroupValues));
       }
 
-      // Insert geofence groups
-      if (geofencegrp && geofencegrp.length > 0) {
-        for (const ggroup of geofencegrp) {
-          const groupData = await tx.select().from(geofencegroup).where(eq(geofencegroup.geo_group, ggroup));
-          if (groupData.length > 0) {
-            await tx.insert(user_geofence_group).values({
-              user_id: userId,
-              geofence_group_id: groupData[0].id,
-            });
-          }
-        }
+      // Batch insert customer groups
+      if (customerGroupData.length > 0) {
+        const customerGroupValues = customerGroupData.map(group => ({
+          user_id: userId,
+          customer_group_id: group.id,
+        }));
+        insertPromises.push(tx.insert(user_customer_group).values(customerGroupValues));
       }
 
-      // Insert customer groups
-      if (custgrp && custgrp.length > 0) {
-        for (const cgroup of custgrp) {
-          const groupData = await tx.select().from(customer_group).where(eq(customer_group.group_name, cgroup));
-          if (groupData.length > 0) {
-            await tx.insert(user_customer_group).values({
-              user_id: userId,
-              customer_group_id: groupData[0].id,
-            });
-          }
-        }
-      }
+      // Execute all inserts in parallel
+      await Promise.all(insertPromises);
 
       return {
         userId,
@@ -409,7 +418,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     res.status(201).json({
       message: "User created successfully",
-      user: result,
+      data: result, // Changed from 'user: result' to 'data: result' to match your API response pattern
     });
 
   } catch (error) {
