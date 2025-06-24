@@ -112,7 +112,11 @@ export async function createGeoFence(req: Request, res: Response) {
             } as any;
         }
         
-        return response;
+        return res.status(201).json({
+    success: true,
+    message: 'Geofence created successfully',
+    data: response
+});
         
     } catch (error) {
         console.error('Error creating geofence:', error);
@@ -142,7 +146,12 @@ export async function getAllGeoFences(req: Request, res: Response) {
             return geo;
         }));
         
-        return result;
+        // return result;
+        return res.status(201).json({
+    success: true,
+    // message: 'Geofence created successfully',
+    // data: response
+});
     } catch (error) {
         console.error('Error fetching geofences:', error);
         throw error;
@@ -181,7 +190,12 @@ export async function getGeoFenceById(req: Request, res: Response) {
             } as typeof response & { polygon_points: typeof polygonPoints };
         }
         
-        return response;
+        // return response;
+        return res.status(201).json({
+    success: true,
+    // message: 'Geofence created successfully',
+    data: response
+});
     } catch (error) {
         console.error('Error fetching geofence:', error);
         throw error;
@@ -302,7 +316,12 @@ export async function updateGeoFence(req: Request, res: Response) {
             } as typeof response & { polygon_points: typeof polygonPoints };
         }
         
-        return response;
+        // return response;
+        return res.status(201).json({
+    success: true,
+    // message: 'Geofence created successfully',
+    data: response
+});
     } catch (error) {
         console.error('Error updating geofence:', error);
         throw error;
@@ -383,7 +402,12 @@ export async function searchGeoFences(req: Request, res: Response) {
                     polygon_points: polygonPoints
                 } as typeof geo & { polygon_points: typeof polygonPoints };
             }
-            return geo;
+            // return geo;
+            return res.status(201).json({
+    success: true,
+    // message: 'Geofence created successfully',
+    // data: response
+});
         }));
         
         return result;
@@ -434,7 +458,12 @@ export async function getGeoFencesByUserId(req: Request, res: Response) {
             return geo;
         }));
 
-        return result;
+        // return result;
+        return res.status(201).json({
+    success: true,
+    // message: 'Geofence created successfully',
+    // data: response
+});
     } catch (error) {
         console.error('Error fetching geofences by user id:', error);
         throw error;
