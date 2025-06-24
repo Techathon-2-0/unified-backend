@@ -148,7 +148,7 @@ userRouter.get('/user/validate', validateUserSession, (req: Request, res: Respon
   res.status(200).send({ valid: true });
 });
 
-userRouter.delete('/user/logout', async (req, res) => {
+userRouter.delete('/userlogout', async (req, res) => {
   await logoutUser(req, res);
 });
 
