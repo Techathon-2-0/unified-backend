@@ -52,8 +52,8 @@ userRouter.get('/user/id/:id', async (req, res) => {
 //woarkgin
 userRouter.post('/user', async (req, res) => {
     //create user   
-    const data = await createUser(req, res);
-    res.send({ message: 'User created successfully', data });
+    await createUser(req, res);
+
 });
 
 

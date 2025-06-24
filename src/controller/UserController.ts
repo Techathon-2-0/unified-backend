@@ -214,11 +214,14 @@ export const createUser = async (req: Request, res: Response) => {
       }
       if(uname && em){
        res.status(400).json({ message: 'Username and Email already exists',username, email });
+       return;
       }else if(uname){
       res.status(400).json({ message: 'Username already exists', username });
+       return;
       }
       else if(em){
         res.status(400).json({ message: 'Email already exists', email });
+         return;
       }
     }
     
@@ -314,10 +317,11 @@ export const createUser = async (req: Request, res: Response) => {
         });
       }
     }
-    return {userId,name, phone, username, email, roles, tag, usertypes, vehiclegrp, geofencegrp,custgrp};
+    const data={userId,name, phone, username, email, roles, tag, usertypes, vehiclegrp, geofencegrp,custgrp};
+    return res.send({ message: 'User created successfully', data });
   } catch (error) {
     console.error('Error creating user:', error);
-    // res.status(500).json({ message: 'Failed to create user' });
+    res.status(500).json({ message: 'Failed to create user' });
   }
 };
 
