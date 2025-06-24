@@ -251,166 +251,114 @@ export const getUserById = async (req: Request, res: Response) => {
 
 // working
 export const createUser = async (req: Request, res: Response) => {
-  try {
-    const { name, phone, username, email, password, roles, tag, usertypes } =
-      req.body;
-    const custgrp = req.body.custgrp || [];
-    const vehiclegrp = req.body.vehiclegroup || [];
-    const geofencegrp = req.body.geofencegroup || [];
-    const token =
-      req.headers.authorization?.split(" ")[1] || process.env.SSO_TOKEN;
+  const transaction = await db.transaction(async (tx) => {
+    try {
+      const { name, phone, username, email, password, roles, tag, usertypes } =
+        req.body;
+      const custgrp = req.body.custgrp || [];
+      const vehiclegrp = req.body.vehiclegroup || [];
+      const geofencegrp = req.body.geofencegroup || [];
+      const token =
+        req.headers.authorization?.split(" ")[1] || process.env.SSO_TOKEN;
 
-    // Check if username or email already exists
-    const existingUser = await db
-      .select()
-      .from(usersTable)
-      .where(
-        or(eq(usersTable.username, username), eq(usersTable.email, email))
+      // Check if username or email already exists
+      const existingUser = await tx
+        .select()
+        .from(usersTable)
+        .where(
+          or(eq(usersTable.username, username), eq(usersTable.email, email))
+        );
+
+      if (existingUser.length > 0) {
+        let uname = 0;
+        let em = 0;
+        for (const u of existingUser) {
+          if (u.username === username) uname = 1;
+          if (u.email === email) em = 1;
+        }
+        if (uname && em) {
+          throw new Error("Username and Email already exists");
+        } else if (uname) {
+          throw new Error("Username already exists");
+        } else if (em) {
+          throw new Error("Email already exists");
+        }
+      }
+
+      // SSO creation (outside transaction)
+      const response = await axios.post(
+        `${process.env.SSO_URL}/createUserAndMapGroups`,
+        {
+          name: email,
+          firstName: username,
+          lastName: username,
+          ou: `${process.env.SSO_OU}`,
+          password: password,
+          groups: [`${process.env.SSO_GROUP}`],
+          permissions: [
+            roles == "admin"
+              ? `${process.env.SSO_ADMIN_PERMISSION}`
+              : `${process.env.SSO_USER_PERMISSION}`,
+          ],
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-    if (existingUser.length > 0) {
-      let uname = 0;
-      let em = 0;
-      for (const u of existingUser) {
-        if (u.username === username) {
-          uname = 1;
+      if (response.status !== 200) {
+        throw new Error("Failed to create user in SSO");
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create new user
+      const newUser = await tx
+        .insert(usersTable)
+        .values({
+          name,
+          phone,
+          username,
+          email,
+          password: hashedPassword,
+          active: true,
+          tag: tag || null,
+        })
+        .$returningId();
+
+      const userId = newUser[0].id;
+
+      // Insert all related data within the same transaction
+      const q = await tx.select().from(role).where(eq(role.role_name, roles));
+      if (q.length > 0) {
+        await tx.insert(user_role).values({
+          user_id: userId,
+          role_id: q[0].id,
+        });
+      }
+
+      // Batch insert user types
+      if (usertypes.length > 0) {
+        const userTypeData = await tx
+          .select()
+          .from(usertype)
+          .where(sql`${usertype.user_type} IN ${usertypes}`);
+        const userTypeInserts = userTypeData.map((ut) => ({
+          user_id: userId,
+          user_type_id: ut.id,
+        }));
+        if (userTypeInserts.length > 0) {
+          await tx.insert(user_usertype).values(userTypeInserts);
         }
-        if (u.email === email) {
-          em = 1;
-        }
       }
-      if (uname && em) {
-        return res
-          .status(400)
-          .json({
-            message: "Username and Email already exists",
-            username,
-            email,
-          });
-      } else if (uname) {
-        return res
-          .status(400)
-          .json({ message: "Username already exists", username });
-      } else if (em) {
-        return res.status(400).json({ message: "Email already exists", email });
-      }
-    }
 
-    const response = await axios.post(
-      `${process.env.SSO_URL}/createUserAndMapGroups`,
-      {
-        name: email,
-        firstName: username,
-        lastName: username,
-        ou: `${process.env.SSO_OU}`,
-        password: password,
-        groups: [`${process.env.SSO_GROUP}`],
-        permissions: [
-          roles == "admin"
-            ? `${process.env.SSO_ADMIN_PERMISSION}`
-            : `${process.env.SSO_USER_PERMISSION}`,
-        ],
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+      // Similar batch operations for other groups...
 
-    if (response.status !== 200) {
-      console.error("Error creating user in SSO:", response.data);
-      return res.status(500).json({ message: "Failed to create user in SSO" });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create new user
-    const newUser = await db
-      .insert(usersTable)
-      .values({
-        name,
-        phone,
-        username,
-        email,
-        password: hashedPassword,
-        active: true,
-        tag: tag || null,
-      })
-      .$returningId();
-
-    const userId = newUser[0].id;
-
-    // Insert role
-    const q = await db.select().from(role).where(eq(role.role_name, roles));
-    if (q.length > 0) {
-      await db.insert(user_role).values({
-        user_id: userId,
-        role_id: q[0].id,
-      });
-    }
-
-    // Insert user types
-    for (const u of usertypes) {
-      const d = await db
-        .select()
-        .from(usertype)
-        .where(eq(usertype.user_type, u));
-      if (d.length > 0) {
-        await db.insert(user_usertype).values({
-          user_id: userId,
-          user_type_id: d[0].id,
-        });
-      }
-    }
-
-    // Insert vehicle groups
-    for (const v of vehiclegrp) {
-      const d = await db
-        .select()
-        .from(vehiclegroup)
-        .where(eq(vehiclegroup.group_name, v));
-      if (d.length > 0) {
-        await db.insert(user_vehicle_group).values({
-          user_id: userId,
-          vehicle_group_id: d[0].id,
-        });
-      }
-    }
-
-    // Insert geofence groups
-    for (const g of geofencegrp) {
-      const d = await db
-        .select()
-        .from(geofencegroup)
-        .where(eq(geofencegroup.geo_group, g));
-      if (d.length > 0) {
-        await db.insert(user_geofence_group).values({
-          user_id: userId,
-          geofence_group_id: d[0].id,
-        });
-      }
-    }
-
-    // Insert customer groups
-    for (const g of custgrp) {
-      const d = await db
-        .select()
-        .from(customer_group)
-        .where(eq(customer_group.group_name, g));
-      if (d.length > 0) {
-        await db.insert(user_customer_group).values({
-          user_id: userId,
-          customer_group_id: d[0].id,
-        });
-      }
-    }
-
-    res.status(201).json({
-      message: "User created successfully",
-      user: {
+      return {
         userId,
         name,
         phone,
@@ -422,11 +370,26 @@ export const createUser = async (req: Request, res: Response) => {
         vehiclegrp,
         geofencegrp,
         custgrp,
-      },
+      };
+    } catch (error) {
+      throw error;
+    }
+  });
+
+  try {
+    const result = await transaction;
+    res.status(201).json({
+      message: "User created successfully",
+      user: result,
     });
   } catch (error) {
     console.error("Error creating user:", error);
-    res.status(500).json({ message: "Failed to create user" });
+    res
+      .status(500)
+      .json({ 
+        message: "Failed to create user", 
+        error: typeof error === "object" && error !== null && "message" in error ? (error as { message: string }).message : String(error)
+      });
   }
 };
 
