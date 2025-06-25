@@ -19,7 +19,7 @@ import jwt from "jsonwebtoken";
 import axios from "axios";
 import { db } from "../db/connection";
 
-export async function makeuserinactive(existingUser: any,token: string) {
+export async function makeuserinactive(existingUser: any,token: string,status?:false) {
       try{
         const response=await axios.put(`${process.env.SSO_URL}/user`,{
           name: existingUser[0].email,
@@ -29,7 +29,7 @@ export async function makeuserinactive(existingUser: any,token: string) {
           employeeCode: "",
           designation: null,
           contactNumber: "",
-          isActive: false
+          isActive: status
         }, {
             headers: {
               'Content-Type': 'application/json',
@@ -475,13 +475,12 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if(active=== false){
-      const ssoResponse = await makeuserinactive(existingUser,req.headers.authorization?.split(' ')[1]||"");
+     const ssoResponse = await makeuserinactive(existingUser,req.headers.authorization?.split(' ')[1]||"",active);
+     
       if(ssoResponse.status !== 200) {
         console.error('Error making user inactive in SSO:', ssoResponse.data);
         return {};
       }
-    }
 
     await db
       .update(usersTable)
@@ -608,7 +607,7 @@ export const deleteUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
    const response =await makeuserinactive(existingUser,req.headers.authorization?.split(' ')[1]||"");
-   
+
     console.log(response);
     if (response.status !== 200) {
       console.error("Error deleting user in SSO:", response.data);
