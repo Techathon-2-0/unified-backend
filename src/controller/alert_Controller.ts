@@ -250,20 +250,21 @@ export const getAlertsByUserAccess = async (req: Request, res: Response) => {
         alarmId: alert.alert_type,
         createdAt: alert.created_at,
         severity_type: alarm.alarm_category,
-        entityId: group_entity.entity_id
+        vehicleNumber: entity.vehicleNumber // <-- Use vehicleNumber directly
       })
       .from(alert)
       .innerJoin(alarm_alert, eq(alert.id, alarm_alert.alert_id))
       .innerJoin(alarm_group, eq(alarm_alert.alarm_id, alarm_group.alarm_id))
       .innerJoin(group_entity, eq(alarm_group.vehicle_group_id, group_entity.group_id))
+      .innerJoin(entity, eq(group_entity.entity_id, entity.id))
       .innerJoin(alarm, eq(alert.alert_type, alarm.id))
       .where(inArray(group_entity.entity_id, entityIds))
       .orderBy(sql`${alert.created_at} DESC`).limit(20);
 
-    // Attach vehicleNumber to each alert
+    // No need to map entityId to vehicleNumber anymore
+    // Attach vehicleNumber to each alert (already present)
     const userAlertsWithVehicle = userAlerts.map(alertItem => ({
-      ...alertItem,
-      vehicleNumber: entityIdToVehicleNumber[alertItem.entityId] || null
+      ...alertItem
     }));
 
     return res.status(200).json({
