@@ -5,8 +5,8 @@ const alarmRouter = express.Router();
 // Alarm Routes
 alarmRouter.get('/alarm', async (req, res) => {
     try {
-        const alarms = await getAllAlarms(req, res);
-        res.status(200).json(alarms);
+        await getAllAlarms(req, res);
+        // res.status(200).json(alarms);
     } catch (error) {
         console.error('Error fetching alarms:', error);
         res.status(500).json({ error: 'Internal Server Error' });
