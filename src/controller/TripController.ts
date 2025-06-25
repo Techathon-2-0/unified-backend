@@ -1,7 +1,7 @@
 import { Trip } from "../types/trip";
 import { readTripXMLData } from "../utilities/xmlfunc";
 import {
-  shipment,
+  shipment,vendor , entity_vendor,
   equipment,
   group,
   group_entity,
@@ -681,10 +681,10 @@ export async function getAllTrips(
               Number(latestGps.longitude),
             ];
             try {
-              current_location_address = await reverseGeocode(
-                Number(latestGps.latitude),
-                Number(latestGps.longitude)
-              );
+              // current_location_address = await reverseGeocode(
+              //   Number(latestGps.latitude),
+              //   Number(latestGps.longitude)
+              // );
             } catch {
               current_location_address = "";
             }
@@ -1043,6 +1043,7 @@ export async function insertData(data: any) {
   if (!authticated) {
     return { message: "User not authenticated" };
   }
+
   const checkvechicleexist = await db
     .select()
     .from(entity)
@@ -1053,9 +1054,46 @@ export async function insertData(data: any) {
       )
     )
     .limit(1);
+
   if (checkvechicleexist.length == 0) {
-    // console.log("Equipment already exists with ID:", data.TransmissionDetails.Shipment.Equipment.Equipment_Id);
-    return { message: "Equipment Doesn't Exist" };
+    // Vehicle doesn't exist, create it
+    try {
+      console.log("Vehicle not found, creating new entity:", data.TransmissionDetails.Shipment.Equipment.Equipment_Id);
+      
+      // Get all active vendors
+      const allActiveVendors = await db
+        .select()
+        .from(vendor)
+        .where(eq(vendor.status, true));
+      
+      if (allActiveVendors.length === 0) {
+        console.warn("No active vendors found, cannot create entity");
+        return { message: "No active vendors available to create entity" };
+      }
+      
+      const vendorIds = allActiveVendors.map(v => v.id);
+      
+      // Create entity with default values
+      const [insertedEntity] = await db.insert(entity).values({
+        vehicleNumber: data.TransmissionDetails.Shipment.Equipment.Equipment_Id,
+        type: "car", // Default type
+        status: true, // Active by default
+      }).$returningId();
+      
+      // Create vendor relationships with all active vendors
+      for(const vendorId of vendorIds) {
+        await db.insert(entity_vendor).values({
+          entity_id: insertedEntity.id,
+          vendor_id: vendorId
+        });
+      }
+      
+      console.log("Entity created successfully with ID:", insertedEntity.id);
+      
+    } catch (entityError) {
+      console.error("Error creating entity:", entityError);
+      return { message: "Failed to create entity for vehicle" };
+    }
   }
 
   const transmissionHeader = data.TransmissionHeader;
@@ -1090,21 +1128,22 @@ export async function insertData(data: any) {
     );
   }
 
-  let last_location = "";
+  // let last_location = "";
 
-  if (data.TransmissionDetails.Shipment.Stops) {
-    const w = data.TransmissionDetails.Shipment.Stops.Stop || [];
-    if (w.length > 0) {
-      const lastStop = w[w.length - 1];
-      if (lastStop.Latitude && lastStop.Longitude) {
-        last_location = await reverseGeocode(
-          Number(lastStop.Latitude),
-          Number(lastStop.Longitude)
-        );
-      }
-    }
-  }
+  // if (data.TransmissionDetails.Shipment.Stops) {
+  //   const w = data.TransmissionDetails.Shipment.Stops.Stop || [];
+  //   if (w.length > 0) {
+  //     const lastStop = w[w.length - 1];
+  //     if (lastStop.Latitude && lastStop.Longitude) {
+  //       last_location = await reverseGeocode(
+  //         Number(lastStop.Latitude),
+  //         Number(lastStop.Longitude)
+  //       );
+  //     }
+  //   }
+  // }
 
+  // ...existing code continues...
   const shipmentData = data.TransmissionDetails.Shipment;
   const current_time = new Date().toISOString();
   const shipmentid = await db
@@ -1480,7 +1519,7 @@ export async function getTripsByCustomerId(customerId: string) {
 function calculateStatusDurationsFromGPS(
   gpsRecords: Array<{ timestamp: string | number }>,
   tripStartTime: string | number | null = null,
-  thresholdHours = 3
+  thresholdHours = 3 * 1000 * 60 * 60 // 3 hours in milliseconds
 ): string {
   if (!gpsRecords || gpsRecords.length === 0) return "0h";
 
@@ -1491,29 +1530,26 @@ function calculateStatusDurationsFromGPS(
   gpsRecords.sort((a, b) => {
     const timeA = new Date(a.timestamp).getTime();
     const timeB = new Date(b.timestamp).getTime();
-    return timeA - timeB;
+    return timeB - timeA; // Sort in descending order
   });
   if (gpsRecords.length === 0) return "0";
+  console.log("GPS Records:", gpsRecords[gpsRecords.length - 1].timestamp);
+
   // console.log("GPS Records:", gpsRecords);
   // console.log("Trip Start Time:", tripStartTime);
-  if (tripStartTime) {
-    Number(gpsRecords[gpsRecords.length - 1].timestamp) < Number(tripStartTime)
-  } else {
-    return "0h";
-  }
+  
   result +=
     (Date.now() - Number(gpsRecords[gpsRecords.length - 1].timestamp) * 1000) /
     (1000 * 60 * 60);
   // result+=(Date.now() - 1749479710*1000 )/ (1000 * 60 * 60);
   // 1749479710
   // console.log("Initial Result:", gpsRecords[gpsRecords.length-1].timestamp);
-  //  console.log("Result:", result);
-  console.log("Trip Start Time:", tripStartTime);
+  
   if (result <= thresholdHours) {
     for (let i = gpsRecords.length - 1; i > 0; i--) {
-      if (Number(gpsRecords[i].timestamp) < Number(tripStartTime)) {
-        break;
-      }
+      // if (Number(gpsRecords[i].timestamp) < Number(tripStartTime)) {
+      //   break;
+      // }
       const timeA = new Date(gpsRecords[i].timestamp).getTime();
       const timeB = new Date(gpsRecords[i - 1].timestamp).getTime();
       const diff = timeB - timeA; // Difference in hours
@@ -1536,8 +1572,8 @@ function calculateStatusDurationsFromGPS(
     }
   }
 
-  console.log(result);
-  return formatMsToHoursMinutes(Number(result) * 1000 * 60 * 60); // Return total duration in hours
+  console.log("result",result);
+  return formatMsToHoursMinutes(Number(result)*1000); // Return total duration in hours
 }
 
 function calculateEtaBetweenStops(
@@ -1647,7 +1683,6 @@ function calculateTotalStoppageTimeFromGPS(
   }
   return totalStoppageMs;
 }
-
 
 function parseTimeStringToMs(timeString: string): number {
   const timeRegex = /(?:(\d+)d)?\s*(?:(\d+)h)?\s*(?:(\d+)m)?/;
@@ -1813,7 +1848,6 @@ export async function getTripEnd(data: any) {
     };
   }
 }
-// 7)status of stop ka bhi logic kuch alag hai hamare normal se
 
 export async function getTripsByCustomerGroups(
   customerGroupIds: number[],

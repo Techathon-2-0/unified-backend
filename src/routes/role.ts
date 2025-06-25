@@ -1,5 +1,5 @@
 import express, { RequestHandler } from 'express';
-import { getAllRoles, getRoleById, createRole, updateRole,deleteRole } from '../controller/RoleController';
+import { getAllRoles, getRoleById, createRole, updateRole, deleteRole, getRolesByUserId } from '../controller/RoleController';
 
 const RoleRouter = express.Router();
 
@@ -26,4 +26,8 @@ RoleRouter.post('/role', createRole as RequestHandler);
 RoleRouter.put('/role',updateRole as RequestHandler);
 
 RoleRouter.delete('/role/:id', deleteRole as RequestHandler);
+
+// GET roles by user ID
+RoleRouter.get('/roles/user/:userId', getRolesByUserId as RequestHandler);
+
 export default RoleRouter;

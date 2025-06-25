@@ -25,8 +25,6 @@ export async function getAllRoles(){
        const d=await db.select().from(role_tabs).where(eq(role_tabs.role_id, r.id));
       //  const tabsAccess = {};
 
-
-
       for(const item of d){
         console.log(item);
         if (item.tab_id !== null && item.tab_id !== undefined) {
@@ -235,4 +233,54 @@ export const deleteRole = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to delete role' });
   }
 }
+
+import { user_role } from '../db/schema';
+
+// Get roles by user ID
+export const getRolesByUserId = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.userId);
+    // Adjust the join below to match your schema
+    // Example assumes a user_role table with user_id and role_id
+    const userRoles = await db.select().from(role)
+      .innerJoin(user_role, eq(role.id, user_role.role_id))
+      .where(eq(user_role.user_id, userId));
+
+    const data = [];
+    for (const ur of userRoles) {
+      const r = ur.role;
+      const rawdata = {
+        id: r.id,
+        role_name: r.role_name,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        tabs_access: [] as { [key: string]: number }[],
+        report_access: [] as string[]
+      };
+      const d = await db.select().from(role_tabs).where(eq(role_tabs.role_id, r.id));
+      for (const item of d) {
+        if (item.tab_id !== null && item.tab_id !== undefined) {
+          const tabData = await db.select().from(tabs).where(eq(tabs.id, item.tab_id));
+          rawdata.tabs_access.push({
+            [tabData[0].tab_name]: (item.status ? 2 : 1)
+          });
+        }
+      }
+      const dd = await db.select().from(role_report).where(eq(role_report.role_id, r.id));
+      for (const item of dd) {
+        if (item.report_id !== null && item.report_id !== undefined) {
+          const reportData = await db.select().from(report).where(eq(report.id, item.report_id));
+          if (reportData.length > 0) {
+            rawdata.report_access.push(reportData[0].report_name);
+          }
+        }
+      }
+      data.push(rawdata);
+    }
+    res.status(200).json({ message: 'Roles fetched successfully', roles: data });
+  } catch (error) {
+    console.error('Error fetching roles by user ID:', error);
+    res.status(500).json({ message: 'Failed to fetch roles by user ID' });
+  }
+};
 

@@ -228,13 +228,20 @@ export const getAlertsByUserAccess = async (req: Request, res: Response) => {
     // Find all entities (vehicles) related to user's vehicle groups
     const userEntities = await db
       .select({
-        entityId: group_entity.entity_id
+        entityId: group_entity.entity_id,
+        vehicleNumber: entity.vehicleNumber
       })
       .from(group_entity)
+      .innerJoin(entity, eq(group_entity.entity_id, entity.id))
       .where(inArray(group_entity.group_id, vehicleGroupIds.filter((id): id is number => id !== null)));
-    
+
     const entityIds = userEntities.map(e => e.entityId);
-    
+    // Map entityId to vehicleNumber for quick lookup
+    const entityIdToVehicleNumber: Record<number, string> = {};
+    userEntities.forEach(e => {
+      entityIdToVehicleNumber[e.entityId] = e.vehicleNumber;
+    });
+
     // Find alerts related to these entities
     const userAlerts = await db
       .selectDistinct({
@@ -242,7 +249,8 @@ export const getAlertsByUserAccess = async (req: Request, res: Response) => {
         status: alert.status,
         alarmId: alert.alert_type,
         createdAt: alert.created_at,
-        severity_type: alarm.alarm_category
+        severity_type: alarm.alarm_category,
+        entityId: group_entity.entity_id
       })
       .from(alert)
       .innerJoin(alarm_alert, eq(alert.id, alarm_alert.alert_id))
@@ -252,10 +260,16 @@ export const getAlertsByUserAccess = async (req: Request, res: Response) => {
       .where(inArray(group_entity.entity_id, entityIds))
       .orderBy(alert.created_at);
 
+    // Attach vehicleNumber to each alert
+    const userAlertsWithVehicle = userAlerts.map(alertItem => ({
+      ...alertItem,
+      vehicleNumber: entityIdToVehicleNumber[alertItem.entityId] || null
+    }));
+
     return res.status(200).json({
       success: true,
-      count: userAlerts.length,
-      data: userAlerts
+      count: userAlertsWithVehicle.length,
+      data: userAlertsWithVehicle
     });
   } catch (error) {
     console.error("Error fetching user alerts:", error);

@@ -7,7 +7,7 @@ const alarmReportRouter = express.Router();
 // 	getAlarmReport(req, res).catch(next);
 // });
 
-alarmReportRouter.post('/alarm-report', async (req: Request, res: Response) => {
+alarmReportRouter.post('/alarmreport', async (req: Request, res: Response) => {
     try {
         const alarmReport = await getAlarmReport(req, res);
         res.json(alarmReport);

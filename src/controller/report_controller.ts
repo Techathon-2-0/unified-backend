@@ -168,12 +168,19 @@ export async function getDashboardReport(
 
         todayPingCount = gpsToday.length;
 
+        // Vendor logic: prefer GPSVendor, then DB, then 'Unknown Vendor'
+        let lastVendor = (gpsData.GPSVendor && gpsData.GPSVendor.trim() !== '')
+          ? gpsData.GPSVendor
+          : (vendorData[0]?.vendorName && vendorData[0]?.vendorName.trim() !== ''
+            ? vendorData[0]?.vendorName
+            : 'Unknown Vendor');
+
         return {
           vehicleNumber: vehicle.vehicleNumber,
           location,
           latitude: gpsData.latitude,
           longitude: gpsData.longitude,
-          lastVendor: vendorData[0]?.vendorName || gpsData.GPSVendor || 'Unknown',
+          lastVendor,
           gpsTime: gpsData.gpstimestamp != null ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : null,
           gprsTime: gpsData.gprstimestamp != null ? formatDate(new Date(gpsData.gprstimestamp * 1000).toISOString()) : null,
           speed: gpsData.speed || 0,
@@ -274,8 +281,6 @@ export async function getAllPositionsReport(
         .where(eq(entity_vendor.entity_id, vehicle.vehicleId))
         .limit(1);
 
-      const vehicleVendor = vendorData[0]?.vendorName || 'Unknown';
-
       // Process each GPS record and add to trailPoints array
       const trailPoints = [];
       for (const gpsData of gpsRecords) {
@@ -284,8 +289,15 @@ export async function getAllPositionsReport(
           ? await reverseGeocode(gpsData.latitude, gpsData.longitude)
           : gpsData.address || 'Unknown Location';
 
+        // Vendor logic: prefer GPSVendor, then DB, then 'Unknown Vendor'
+        const vendorName = (gpsData.GPSVendor && gpsData.GPSVendor.trim() !== '')
+          ? gpsData.GPSVendor
+          : (vendorData[0]?.vendorName && vendorData[0]?.vendorName.trim() !== ''
+            ? vendorData[0]?.vendorName
+            : 'Unknown Vendor');
+
         trailPoints.push({
-          vendor: vehicleVendor,
+          vendor: vendorName,
           deviceId: gpsData.deviceId,
           timestamp: gpsData.timestamp,
           gpsTime: gpsData.gpstimestamp != null ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : null,

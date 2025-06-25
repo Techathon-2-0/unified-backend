@@ -2,7 +2,7 @@ import { shipment, equipment, gps_schema, entity, user_group, group_entity, grou
 import { eq, inArray, asc, desc, and, gte, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { formatDate } from '../utilities/geofunc';
-import { reverseGeocode } from '../utilities/geofunc';
+//import { reverseGeocode } from '../utilities/geofunc';
 import axios from "axios";
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -146,9 +146,9 @@ for (const ent of activeEntities) {
 
     // Reverse geocode if lat/lng present
     let address = "";
-    if (gpsData.latitude && gpsData.longitude) {
-        address = await reverseGeocode(Number(gpsData.latitude), Number(gpsData.longitude));
-    }
+    // if (gpsData.latitude && gpsData.longitude) {
+    //     address = await reverseGeocode(Number(gpsData.latitude), Number(gpsData.longitude));
+    // }
 
     // Calculate distance and ping count for today
     let todayDistance = "";
