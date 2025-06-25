@@ -258,7 +258,7 @@ export const getAlertsByUserAccess = async (req: Request, res: Response) => {
       .innerJoin(group_entity, eq(alarm_group.vehicle_group_id, group_entity.group_id))
       .innerJoin(alarm, eq(alert.alert_type, alarm.id))
       .where(inArray(group_entity.entity_id, entityIds))
-      .orderBy(alert.created_at);
+      .orderBy(sql`${alert.created_at} DESC`).limit(20);
 
     // Attach vehicleNumber to each alert
     const userAlertsWithVehicle = userAlerts.map(alertItem => ({

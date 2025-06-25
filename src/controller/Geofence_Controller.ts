@@ -146,12 +146,12 @@ export async function getAllGeoFences(req: Request, res: Response) {
             return geo;
         }));
         
-        // return result;
-        return res.status(201).json({
-    success: true,
-    // message: 'Geofence created successfully',
-    // data: response
-});
+        return result;
+//         return res.status(201).json({
+//     success: true,
+//     // message: 'Geofence created successfully',
+//     // data: response
+// });
     } catch (error) {
         console.error('Error fetching geofences:', error);
         throw error;

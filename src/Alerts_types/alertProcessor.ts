@@ -7,7 +7,7 @@ import { processRouteDeviationAlerts } from './routeDeviation';
 // Configuration for alert processing
 const ALERT_CONFIG = {
   enableProcessing: process.env.ENABLE_ALERT_PROCESSING === 'true',
-  processingInterval: parseInt(process.env.ALERT_PROCESSING_INTERVAL || '120000'),
+  processingInterval: parseInt(process.env.ALERT_PROCESSING_INTERVAL || '1200000'),
   batchSize: parseInt(process.env.ALERT_BATCH_SIZE || '100')
 };
 
