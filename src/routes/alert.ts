@@ -7,7 +7,7 @@ import { getAllAlerts, getAlertsByUserAccess,getGeofenceAlertsByVehicle, toggleA
 alertRouter.get('/alerts', async (req, res) => {
     try {
         const alerts = await getAllAlerts(req, res);
-        res.status(200).json(alerts);
+        res.status(200).json({alerts});
     } catch (error) {
         console.error('Error fetching alerts:', error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -19,7 +19,7 @@ alertRouter.get('/alerts/user/:userId', async (req, res) => {
         console.log('Fetching user alerts with access control');
         const userAlerts = await getAlertsByUserAccess(req, res);
         console.log('User Alerts:', userAlerts);
-        res.status(200).json(userAlerts);
+        res.status(200).json({userAlerts});
     } catch (error) {
         console.error('Error fetching user alerts:', error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -30,7 +30,7 @@ alertRouter.put('/alerts/:id', async (req, res) => {
     try {
         const alertId = req.params.id;
         const updatedAlert = await toggleAlertStatus(req, res);
-        res.status(200).json(updatedAlert);
+        res.status(200).json({updatedAlert});
     } catch (error) {
         console.error('Error toggling alert status:', error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -41,7 +41,7 @@ alertRouter.get('/alerts/shipment/:shipmentId', async (req, res) => {
     try {
         const shipmentId = req.params.shipmentId;
         const alerts = await getAlertsByShipment(req, res);
-        res.status(200).json(alerts);
+        res.status(200).json({alerts});
     }
     catch (error) {
         console.error('Error fetching alerts by shipment ID:', error);
@@ -55,7 +55,7 @@ alertRouter.get('/alerts/geofenece/:geofenceId/vehicle/:vehicleNumber', async (r
         const { geofenceId, vehicleNumber } = req.params;
         // Assuming you have a function to get alerts by geofence and vehicle
         const alerts = await getGeofenceAlertsByVehicle(req , res);
-        res.status(200).json(alerts);
+        res.status(200).json({alerts});
     } catch (error) {
         console.error('Error fetching alerts by geofence and vehicle:', error);
         res.status(500).json({ error: 'Internal Server Error' });
