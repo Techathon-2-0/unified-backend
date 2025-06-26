@@ -152,7 +152,7 @@ async function createStoppageAlert(alarmId: number, vehicleNumber: string, stopp
         .insert(alert_shipment_relation)
         .values({
           alert_id: newAlert.id,
-          shipment_id: vehicleShipment[0].shipmentId
+          shipment_id: String(vehicleShipment[0].shipmentId)
         });
     }
 

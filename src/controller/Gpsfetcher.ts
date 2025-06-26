@@ -87,6 +87,7 @@ async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
 
 export async function insertGpsData(d: any) {
   try {
+    //console.log('Received GPS data:', d);
     // 1. Flatten data
     // const data = JSON.parse(d.toString())
     // const flatData = data.flat();
@@ -98,6 +99,7 @@ export async function insertGpsData(d: any) {
     // return d;
     // console.log("kuch kuch:",d.GPSData);
   const flatData = Array.isArray(d) ? d : [d];
+  //console.log('Flattened GPS data:', flatData.length);
 
   if (flatData.length === 0) {
     console.log('⚠️ No GPS data to insert.');
@@ -106,6 +108,8 @@ export async function insertGpsData(d: any) {
 
   const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
   const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
+
+  //console.log(`Processing ${flatData.length} GPS records for ${trailerNumbers.length} trailers and ${gpsVendors.length} vendors.`);
 
     // 3. Bulk fetch entities and vendors
     const [entities, vendors, equipments] = await Promise.all([
@@ -130,6 +134,25 @@ export async function insertGpsData(d: any) {
       if (!entity || vendor?.status === false) {
         continue; // skip invalid
       }
+
+      //console.log(`Processing GPS data for trailer: ${v.trailerNumber}, Vendor: ${v.GPSVendor}`);
+
+      gpsRecordsToInsert.push({
+        trailerNumber: v.trailerNumber,
+        timestamp: max(v.gpstimestamp,v.gprstimestamp),
+        gpstimestamp: v.timestamp,
+        gprstimestamp: v.gprstimestamp,
+        longitude: v.longitude,
+        latitude: v.latitude,
+        heading: v.heading,
+        speed: v.speed,
+        numberOfSatellites: v.numberOfSatellites,
+        digitalInput1: v.digitalInput1,
+        internalBatteryLevel: v.internalBatteryLevel,
+        GPSVendor: v.GPSVendor,
+      });
+
+
 
       if (equip?.shipment_id) {
         const [activeShipment] = await db
@@ -314,23 +337,10 @@ export async function insertGpsData(d: any) {
         }
       }
 
-      gpsRecordsToInsert.push({
-        trailerNumber: v.trailerNumber,
-        timestamp: max(v.gpstimestamp,v.gprstimestamp),
-        gpstimestamp: v.timestamp,
-        gprstimestamp: v.gprstimestamp,
-        longitude: v.longitude,
-        latitude: v.latitude,
-        heading: v.heading,
-        speed: v.speed,
-        numberOfSatellites: v.numberOfSatellites,
-        digitalInput1: v.digitalInput1,
-        internalBatteryLevel: v.internalBatteryLevel,
-        GPSVendor: v.GPSVendor,
-      });
+      
     }
 
-    console.log(`Prepared ${gpsRecordsToInsert.length} valid GPS records for insertion.`);
+    console.log(`Prepared ${gpsRecordsToInsert[0]} valid GPS records for insertion.`);
 
     if (gpsRecordsToInsert.length > 0) {
       await db.insert(gps_schema).values(gpsRecordsToInsert);

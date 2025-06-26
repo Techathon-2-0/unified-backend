@@ -1,7 +1,9 @@
 import { Trip } from "../types/trip";
 import { readTripXMLData } from "../utilities/xmlfunc";
 import {
-  shipment,vendor , entity_vendor,
+  shipment,
+  vendor,
+  entity_vendor,
   equipment,
   group,
   group_entity,
@@ -20,7 +22,8 @@ import {
   alert_shipment_relation,
   alert,
   intutrack_relation,
-  usersTable,alarm,
+  usersTable,
+  alarm,
 } from "../db/schema";
 
 import { ne, eq, inArray, and, gte, lt, desc, sql } from "drizzle-orm";
@@ -30,7 +33,6 @@ import bcrypt from "bcryptjs";
 import { start } from "repl";
 
 const db = drizzle(process.env.DATABASE_URL!);
-
 
 async function fetchallusercustomers(userId: number) {
   try {
@@ -135,8 +137,6 @@ export async function getTripById(id: string) {
         };
       })
     );
-
-
 
     // Map database entities to Trip type
     const tripData: Trip = {
@@ -348,7 +348,7 @@ export async function getAllTrips(
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const shipmentIds = shipments.map((s) => s.id);    // Get alert counts for these shipments grouped by alert type
+    const shipmentIds = shipments.map((s) => s.id); // Get alert counts for these shipments grouped by alert type
     const alertCounts = await db
       .select({
         shipment_id: alert_shipment_relation.shipment_id,
@@ -359,7 +359,9 @@ export async function getAllTrips(
       .from(alert_shipment_relation)
       .leftJoin(alert, eq(alert_shipment_relation.alert_id, alert.id))
       .leftJoin(alarm, eq(alert.alert_type, alarm.id)) // Join with alarm table to get alarm_type_id
-      .where(inArray(alert_shipment_relation.shipment_id, shipmentIds))
+      .where(
+        inArray(alert_shipment_relation.shipment_id, shipmentIds.map(String))
+      )
       .groupBy(
         alert_shipment_relation.shipment_id,
         alarm.alarm_type_id,
@@ -369,25 +371,45 @@ export async function getAllTrips(
     // Define alert type mapping based on alarm_type_id from schema
     const alertTypeMapping: Record<number, string> = {
       1: "stoppage",
-      2: "overspeeding", 
+      2: "overspeeding",
       3: "continuous_driving",
       4: "no_gps_feed",
       5: "reached_stop",
       6: "geofence",
-      7: "route_deviation"
+      7: "route_deviation",
     };
 
     // Create alert counts map grouped by alert type
     const alertCountsMap: Record<
-      number,
+      string, // Changed from number to string
       {
         stoppage: { active: number; inactive: number; manually_closed: number };
-        overspeeding: { active: number; inactive: number; manually_closed: number };
-        continuous_driving: { active: number; inactive: number; manually_closed: number };
-        no_gps_feed: { active: number; inactive: number; manually_closed: number };
-        reached_stop: { active: number; inactive: number; manually_closed: number };
+        overspeeding: {
+          active: number;
+          inactive: number;
+          manually_closed: number;
+        };
+        continuous_driving: {
+          active: number;
+          inactive: number;
+          manually_closed: number;
+        };
+        no_gps_feed: {
+          active: number;
+          inactive: number;
+          manually_closed: number;
+        };
+        reached_stop: {
+          active: number;
+          inactive: number;
+          manually_closed: number;
+        };
         geofence: { active: number; inactive: number; manually_closed: number };
-        route_deviation: { active: number; inactive: number; manually_closed: number };
+        route_deviation: {
+          active: number;
+          inactive: number;
+          manually_closed: number;
+        };
         [key: string]: {
           active: number;
           inactive: number;
@@ -398,7 +420,8 @@ export async function getAllTrips(
 
     // Initialize alert counts for each shipment with all 7 alert types
     for (const shipmentId of shipmentIds) {
-      alertCountsMap[shipmentId] = {
+      alertCountsMap[shipmentId.toString()] = {
+        // Convert to string
         stoppage: { active: 0, inactive: 0, manually_closed: 0 },
         overspeeding: { active: 0, inactive: 0, manually_closed: 0 },
         continuous_driving: { active: 0, inactive: 0, manually_closed: 0 },
@@ -416,13 +439,17 @@ export async function getAllTrips(
         alertCount.alarm_type_id &&
         alertCount.alert_status !== null
       ) {
-        const shipmentId = alertCount.shipment_id;
+        const shipmentId = alertCount.shipment_id; // This is now a string
         const count = alertCount.count;
-        
+
         // Get alert type name from mapping
         const alertType = alertTypeMapping[alertCount.alarm_type_id];
-        
-        if (alertType && alertCountsMap[shipmentId][alertType]) {
+
+        if (
+          alertType &&
+          alertCountsMap[shipmentId] &&
+          alertCountsMap[shipmentId][alertType]
+        ) {
           // Update counts based on status
           switch (alertCount.alert_status) {
             case 1: // Active
@@ -656,10 +683,10 @@ export async function getAllTrips(
             current_location_address = "-";
             last_gps_ping = lastGpsBeforeInactive.gpstimestamp
               ? formatDate(
-                new Date(
-                  Number(lastGpsBeforeInactive.gpstimestamp) * 1000
-                ).toISOString()
-              )
+                  new Date(
+                    Number(lastGpsBeforeInactive.gpstimestamp) * 1000
+                  ).toISOString()
+                )
               : "";
             last_gps_vendor = lastGpsBeforeInactive.GPSVendor || "";
           } else {
@@ -670,7 +697,6 @@ export async function getAllTrips(
             last_gps_vendor = "";
           }
         } else {
-
           if (
             latestGps &&
             latestGps.latitude != null &&
@@ -691,8 +717,8 @@ export async function getAllTrips(
             // last_gps_ping=latestGps.timestamp;
             last_gps_ping = latestGps.gpstimestamp
               ? formatDate(
-                new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
-              )
+                  new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
+                )
               : latestGps.timestamp || "";
             last_gps_vendor = latestGps.GPSVendor || "";
           }
@@ -756,13 +782,12 @@ export async function getAllTrips(
             const loadingtime =
               stop.location_id != null
                 ? await db
-                  .select()
-                  .from(geofence_table)
-                  .where(eq(geofence_table.location_id, stop.location_id))
-                  .limit(1)
+                    .select()
+                    .from(geofence_table)
+                    .where(eq(geofence_table.location_id, stop.location_id))
+                    .limit(1)
                 : [];
             for (const stop of stopsRows) {
-
               if (loadingtime.length > 0) {
                 gname = loadingtime[0].geofence_name || "";
               }
@@ -881,9 +906,7 @@ export async function getAllTrips(
 
         const statusDurations = calculateStatusDurationsFromGPS(
           allGpsRecords,
-          s.start_time
-            ? Math.floor(new Date(s.start_time).getTime() / 1000)
-            : 0
+          s.start_time ? Math.floor(new Date(s.start_time).getTime() / 1000) : 0
         );
 
         // Example: Calculate ceta and trip eta for each trip
@@ -918,10 +941,11 @@ export async function getAllTrips(
         );
         const totalDriveTime = formatMsToHoursMinutes(totalDriveMs);
         const startTime = s.start_time ? new Date(s.start_time).getTime() : 0;
-        const endTime = s.end_time ? new Date(s.end_time).getTime() : Date.now();
+        const endTime = s.end_time
+          ? new Date(s.end_time).getTime()
+          : Date.now();
 
         const tt = endTime - startTime;
-
 
         return {
           id: s.shipment_id,
@@ -953,7 +977,7 @@ export async function getAllTrips(
           total_distance: total_distance.toFixed(2) + "km",
           total_covered_distance: covered_distance.toFixed(2) + "km",
           average_distance:
-            (typeof tt != "number" || tt === 0)
+            typeof tt != "number" || tt === 0
               ? "0km"
               : (Number(covered_distance) / Number(tt)).toFixed(2) + " km",
           status: s.status,
@@ -1058,38 +1082,44 @@ export async function insertData(data: any) {
   if (checkvechicleexist.length == 0) {
     // Vehicle doesn't exist, create it
     try {
-      console.log("Vehicle not found, creating new entity:", data.TransmissionDetails.Shipment.Equipment.Equipment_Id);
-      
+      console.log(
+        "Vehicle not found, creating new entity:",
+        data.TransmissionDetails.Shipment.Equipment.Equipment_Id
+      );
+
       // Get all active vendors
       const allActiveVendors = await db
         .select()
         .from(vendor)
         .where(eq(vendor.status, true));
-      
+
       if (allActiveVendors.length === 0) {
         console.warn("No active vendors found, cannot create entity");
         return { message: "No active vendors available to create entity" };
       }
-      
-      const vendorIds = allActiveVendors.map(v => v.id);
-      
+
+      const vendorIds = allActiveVendors.map((v) => v.id);
+
       // Create entity with default values
-      const [insertedEntity] = await db.insert(entity).values({
-        vehicleNumber: data.TransmissionDetails.Shipment.Equipment.Equipment_Id,
-        type: "car", // Default type
-        status: true, // Active by default
-      }).$returningId();
-      
+      const [insertedEntity] = await db
+        .insert(entity)
+        .values({
+          vehicleNumber:
+            data.TransmissionDetails.Shipment.Equipment.Equipment_Id,
+          type: "car", // Default type
+          status: true, // Active by default
+        })
+        .$returningId();
+
       // Create vendor relationships with all active vendors
-      for(const vendorId of vendorIds) {
+      for (const vendorId of vendorIds) {
         await db.insert(entity_vendor).values({
           entity_id: insertedEntity.id,
-          vendor_id: vendorId
+          vendor_id: vendorId,
         });
       }
-      
+
       console.log("Entity created successfully with ID:", insertedEntity.id);
-      
     } catch (entityError) {
       console.error("Error creating entity:", entityError);
       return { message: "Failed to create entity for vehicle" };
@@ -1260,7 +1290,7 @@ export async function insertData(data: any) {
 
     const getIndianTime = () => {
       const now = new Date();
-      const indianTime = new Date(now.getTime() + (5.5 * 60 * 60 * 1000)); // Add 5 hours 30 minutes
+      const indianTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000); // Add 5 hours 30 minutes
       return indianTime;
     };
 
@@ -1537,14 +1567,13 @@ function calculateStatusDurationsFromGPS(
 
   // console.log("GPS Records:", gpsRecords);
   // console.log("Trip Start Time:", tripStartTime);
-  
+
   result +=
-    (Date.now() - Number(gpsRecords[gpsRecords.length - 1].timestamp) * 1000) /
-    (1000 * 60 * 60);
+    Date.now() - Number(gpsRecords[gpsRecords.length - 1].timestamp) * 1000;
   // result+=(Date.now() - 1749479710*1000 )/ (1000 * 60 * 60);
   // 1749479710
   // console.log("Initial Result:", gpsRecords[gpsRecords.length-1].timestamp);
-  
+
   if (result <= thresholdHours) {
     for (let i = gpsRecords.length - 1; i > 0; i--) {
       // if (Number(gpsRecords[i].timestamp) < Number(tripStartTime)) {
@@ -1572,8 +1601,8 @@ function calculateStatusDurationsFromGPS(
     }
   }
 
-  console.log("result",result);
-  return formatMsToHoursMinutes(Number(result)*1000); // Return total duration in hours
+  console.log("result", result);
+  return formatMsToHoursMinutes(Number(result)); // Return total duration in hours
 }
 
 function calculateEtaBetweenStops(
@@ -1690,11 +1719,13 @@ function parseTimeStringToMs(timeString: string): number {
 
   if (!match) return 0;
 
-  const days = parseInt(match[1] || '0', 10);
-  const hours = parseInt(match[2] || '0', 10);
-  const minutes = parseInt(match[3] || '0', 10);
+  const days = parseInt(match[1] || "0", 10);
+  const hours = parseInt(match[2] || "0", 10);
+  const minutes = parseInt(match[3] || "0", 10);
 
-  return (days * 24 * 60 * 60 * 1000) + (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
+  return (
+    days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000 + minutes * 60 * 1000
+  );
 }
 
 function calculateTotalDetentionTime(
@@ -1708,8 +1739,8 @@ function calculateTotalDetentionTime(
   let detentionMs = 0;
 
   // Check if stops have detention_time field in schema
-  const hasDetentionTimeInSchema = stops.some(stop =>
-    stop.detention_time !== undefined && stop.detention_time !== null
+  const hasDetentionTimeInSchema = stops.some(
+    (stop) => stop.detention_time !== undefined && stop.detention_time !== null
   );
 
   if (hasDetentionTimeInSchema) {
@@ -1717,9 +1748,9 @@ function calculateTotalDetentionTime(
     for (const stop of stops) {
       if (stop.detention_time) {
         // Convert detention_time to milliseconds if it's a string (like "2h 30m")
-        if (typeof stop.detention_time === 'string') {
+        if (typeof stop.detention_time === "string") {
           detentionMs += parseTimeStringToMs(stop.detention_time);
-        } else if (typeof stop.detention_time === 'number') {
+        } else if (typeof stop.detention_time === "number") {
           detentionMs += stop.detention_time;
         }
       }
@@ -1736,7 +1767,7 @@ function calculateTotalDetentionTime(
       }
     }
   }
-  return detentionMs + totalStoppageMs
+  return detentionMs + totalStoppageMs;
 }
 
 function calculateTotalDriveTime(
@@ -2068,19 +2099,19 @@ export async function getTripsByCustomerGroups(
             current_location_coordinates = ["-", "-"];
             last_gps_ping = lastGpsBeforeInactive.gpstimestamp
               ? formatDate(
-                new Date(
-                  Number(lastGpsBeforeInactive.gpstimestamp) * 1000
-                ).toISOString()
-              )
+                  new Date(
+                    Number(lastGpsBeforeInactive.gpstimestamp) * 1000
+                  ).toISOString()
+                )
               : "";
             last_gps_vendor = lastGpsBeforeInactive.GPSVendor || "";
             gps_time = last_gps_ping;
             gprs_time = lastGpsBeforeInactive.gprstimestamp
               ? formatDate(
-                new Date(
-                  Number(lastGpsBeforeInactive.gprstimestamp) * 1000
-                ).toISOString()
-              )
+                  new Date(
+                    Number(lastGpsBeforeInactive.gprstimestamp) * 1000
+                  ).toISOString()
+                )
               : "";
             // vehicle_status = "Inactive";
           } else {
@@ -2114,15 +2145,15 @@ export async function getTripsByCustomerGroups(
 
             last_gps_ping = latestGps.gpstimestamp
               ? formatDate(
-                new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
-              )
+                  new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
+                )
               : "";
             last_gps_vendor = latestGps.GPSVendor || "";
             gps_time = last_gps_ping;
             gprs_time = latestGps.gprstimestamp
               ? formatDate(
-                new Date(Number(latestGps.gprstimestamp) * 1000).toISOString()
-              )
+                  new Date(Number(latestGps.gprstimestamp) * 1000).toISOString()
+                )
               : "";
           }
         }
@@ -2240,14 +2271,13 @@ export async function getTripsByCustomerGroups(
             timestamp: row.timestamp as string | number,
           }));
 
-        const totalStoppageMs =
-          calculateTotalStoppageTimeFromGPS(
-            allGpsRecords.map(rec => ({
-              latitude: rec.latitude != null ? Number(rec.latitude) : 0,
-              longitude: rec.longitude != null ? Number(rec.longitude) : 0,
-              timestamp: rec.timestamp,
-            }))
-          );
+        const totalStoppageMs = calculateTotalStoppageTimeFromGPS(
+          allGpsRecords.map((rec) => ({
+            latitude: rec.latitude != null ? Number(rec.latitude) : 0,
+            longitude: rec.longitude != null ? Number(rec.longitude) : 0,
+            timestamp: rec.timestamp,
+          }))
+        );
         const totalDetentionMs = calculateTotalDetentionTime(
           stops,
           totalStoppageMs

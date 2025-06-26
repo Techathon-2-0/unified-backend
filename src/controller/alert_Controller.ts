@@ -358,7 +358,7 @@ export const toggleAlertStatus = async (req: Request, res: Response) => {
           .where(
             and(
               eq(alert_shipment_relation.alert_id, parseInt(id)),
-              eq(alert_shipment_relation.shipment_id, parseInt(shipmentId))
+              eq(alert_shipment_relation.shipment_id, shipmentId)
             )
           )
           .limit(1);
@@ -392,7 +392,7 @@ export const toggleAlertStatus = async (req: Request, res: Response) => {
         .where(
           and(
             eq(alert_shipment_relation.alert_id, parseInt(id)),
-            eq(alert_shipment_relation.shipment_id, parseInt(shipmentId))
+            eq(alert_shipment_relation.shipment_id, shipmentId)
           )
         );
     }
@@ -428,7 +428,7 @@ export const getAlertCountsByTrip = async (req: Request, res: Response) => {
       })
       .from(alert)
       .innerJoin(alert_shipment_relation, eq(alert.id, alert_shipment_relation.alert_id))
-      .where(eq(alert_shipment_relation.shipment_id, parseInt(shipmentId)));
+      .where(eq(alert_shipment_relation.shipment_id, shipmentId));
     
     return res.status(200).json({
       success: true,
@@ -449,7 +449,16 @@ export const getAlertsByShipment = async (req: Request, res: Response) => {
     const { shipmentId } = req.params;
     const { status } = req.query; // Optional filter by status
     
-    let conditions = [eq(alert_shipment_relation.shipment_id, parseInt(shipmentId))];
+    // Validate shipmentId
+    if (!shipmentId || shipmentId.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: "Shipment ID is required"
+      });
+    }
+    
+    // Use shipmentId as string, don't parse to int since it can contain letters
+    let conditions = [eq(alert_shipment_relation.shipment_id, shipmentId)];
     
     // Add status filter if provided
     if (status !== undefined) {
@@ -511,7 +520,7 @@ export const getAlertsByShipment = async (req: Request, res: Response) => {
     
     return res.status(200).json({
       success: true,
-      shipment_id: parseInt(shipmentId),
+      shipment_id: shipmentId, // Return as string
       total_alerts: enhancedAlerts.length,
       active_alerts: enhancedAlerts.filter(a => a.status === 1).length,
       manually_closed_alerts: enhancedAlerts.filter(a => a.status === 2).length,
@@ -526,7 +535,6 @@ export const getAlertsByShipment = async (req: Request, res: Response) => {
     });
   }
 };
-
 // alert by geofence id and vehicle number  return me time when geofence alert was created and status of geofence alert , alert id , only return alerts i.e are created in less that 24 hours 
 export const getGeofenceAlertsByVehicle = async (req: Request, res: Response) => {
   try {

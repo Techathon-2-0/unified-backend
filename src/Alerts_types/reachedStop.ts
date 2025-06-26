@@ -154,7 +154,7 @@ export async function processReachedStopAlerts() {
                 .where(
                   and(
                     eq(alarm_alert.alarm_id, alarmConfig.id),
-                    eq(alert_shipment_relation.shipment_id, vehicleShipment.shipmentId)
+                    eq(alert_shipment_relation.shipment_id, String(vehicleShipment.shipmentId))
                   )
                 )
                 .limit(1);
@@ -189,7 +189,7 @@ export async function processReachedStopAlerts() {
                 .insert(alert_shipment_relation)
                 .values({
                     alert_id: newAlertId,
-                    shipment_id: vehicleShipment.shipmentId,
+                    shipment_id: String(vehicleShipment.shipmentId),
                     alert_method: 1 // Default alert method
                 });
                 

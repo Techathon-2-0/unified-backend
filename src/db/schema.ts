@@ -334,7 +334,7 @@ export const equipmentShipmentIdx = index('idx_equipment_shipment_id').on(
 
 export const alert_shipment_relation = mysqlTable('alert_shipment_relation', {
   id: int().primaryKey().autoincrement(),
-  shipment_id: int('shipment_id').references(() => shipment.id),
+  shipment_id: varchar('shipment_id', { length: 255 }).notNull().references(() => shipment.shipment_id), 
   alert_id: int('alert_id').references(() => alert.id),
   alert_method: int('alert_meathod').notNull().default(1), //  
   created_at: timestamp('created_at').defaultNow(),

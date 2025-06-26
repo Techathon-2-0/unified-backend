@@ -46,7 +46,8 @@ featureRouter.post('/insertgps', async (req, res) => {
         // }
         // console.log('Received GPS data:', gpsData);
         // const rawdata = JSON.stringify(gpsData.messages);
-        const result = await insertGpsData(gpsData.data);
+        console.log('Received GPS data:', gpsData);
+        const result = await insertGpsData(gpsData);
         res.status(201).json({ message: 'GPS data inserted successfully',gpsData});
     } catch (error) {
         console.error('Error inserting GPS data:', error);
