@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import {report, tabs, usertype, vendor, role, role_tabs, role_report, usersTable, user_role, user_usertype} from "../db/schema";
 import { eq, or, inArray } from "drizzle-orm";
-import { create } from "domain";
+
 import bcrypt from "bcrypt";
 const utype=['Driver','Customer','consignee','Consignor','Attendant','Admin'];
 
@@ -192,8 +192,41 @@ export const createUser = async (body:any) => {
 export async function insertdumpdata() {
     try{
 
-        //insert role of admin will all user
+        //insert role of admin  will all user
+      for(const ut of utype){
+            const d=await db.select().from(usertype).where(eq(usertype.user_type, ut));
+            console.log(d);
+            if(d.length===0){
+                await db.insert(usertype).values({
+                    user_type: ut
+                });
+            }
+        }
+        for(const ut of tb){
+            const d=await db.select().from(tabs).where(eq(tabs.tab_name, ut));
+            if(d.length===0){
+                await db.insert(tabs).values({
+                    tab_name: ut
+                });
+            }
+        }
+        for(const ut of rp){
+            const d=await db.select().from(report).where(eq(report.report_name, ut));
+            if(d.length===0){
+                await db.insert(report).values({
+                    report_name: ut
+                });
+            }
+        }
 
+        for(const vendorName of vendors){
+            const existingVendor = await db.select().from(vendor).where(eq(vendor.name, vendorName));
+            if(existingVendor.length === 0){
+                await db.insert(vendor).values({
+                    name: vendorName
+                });
+            }
+        }
        await createRole({
             role_name: "Admin",
             tabs_access: [
@@ -229,43 +262,8 @@ export async function insertdumpdata() {
                 "Alarm Log"
             ]
         });
-        //create user with admin
+        //create user with admi
 
-
-        for(const ut of utype){
-            const d=await db.select().from(usertype).where(eq(usertype.user_type, ut));
-            console.log(d);
-            if(d.length===0){
-                await db.insert(usertype).values({
-                    user_type: ut
-                });
-            }
-        }
-        for(const ut of tb){
-            const d=await db.select().from(tabs).where(eq(tabs.tab_name, ut));
-            if(d.length===0){
-                await db.insert(tabs).values({
-                    tab_name: ut
-                });
-            }
-        }
-        for(const ut of rp){
-            const d=await db.select().from(report).where(eq(report.report_name, ut));
-            if(d.length===0){
-                await db.insert(report).values({
-                    report_name: ut
-                });
-            }
-        }
-
-        for(const vendorName of vendors){
-            const existingVendor = await db.select().from(vendor).where(eq(vendor.name, vendorName));
-            if(existingVendor.length === 0){
-                await db.insert(vendor).values({
-                    name: vendorName
-                });
-            }
-        }
         await createUser({
             name: "Admin",
             phone: "1234567890",
