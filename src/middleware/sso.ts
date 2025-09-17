@@ -3,6 +3,18 @@ import { Request, Response, NextFunction } from 'express';
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers['authorization'];
+    if(req.originalUrl == '/trip'){
+        let token = req.headers['token']
+        if(!token){
+        return res.status(401).json({ success: false, message: 'No token provided' });
+        }
+        if(process.env.TRIP_TOKEN == token){
+            next();
+        }
+        else{
+         return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+    }else{
     const token = authHeader?.split(' ')[1] || process.env.SSO_TOKEN; // Expecting 'Bearer <token>'
     // console.log('Auth header:', token);
     console.log('Auth header:', authHeader);
@@ -38,4 +50,5 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
             error: error?.response?.data || error.message
         });
     }
+}
 }
