@@ -188,7 +188,129 @@ export async function getTripById(id: string) {
   }
 }
 
-//working
+//working//working
+interface UserGroup {
+  vehicle_group_id: number | null;
+}
+
+interface Group {
+  id: number;
+  group_name: string | null;
+}
+
+interface GroupEntity {
+  entity_id: number | null;
+  group_id: number | null;
+}
+
+interface Entity {
+  id: number;
+  vehicleNumber: string | null;
+  type: string | null;
+  status: boolean | null;
+}
+
+interface Shipment {
+  id: number;
+  shipment_id: string | null;
+  route_name: string | null;
+  domain_name: string | null;
+  created_at: Date | null;
+  end_time: Date | null;
+  status: string | null;
+  start_location: string | null;
+  end_location: string | null;
+  start_latitude: number | null;
+  start_longitude: number | null;
+  end_latitude: number | null;
+  end_longitude: number | null;
+  start_time: Date | null;
+}
+
+interface Equipment {
+  shipment_id: number | null;
+  equipment_id: string | null;
+  driver_name: string | null;
+  driver_mobile_no: string | null;
+  service_provider_alias_value: string | null;
+  status_duration: string | null;
+}
+
+interface AlertCount {
+  shipment_id: string | null;
+  alarm_type_id: number | null;
+  alert_status: number | null;
+  count: number;
+}
+
+interface Stop {
+  id: number;
+  shipment_id: number | null;
+  location_id: string | null;
+  stop_type: string | null;
+  stop_sequence: number | null;
+  actual_sequence: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  entry_time: Date | null;
+  exit_time: Date | null;
+  detention_time: string | null;
+  planned_departure_date: Date | null;
+  geo_fence_radius: number | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+}
+
+interface CustomerLRDetail {
+  stop_id: number | null;
+  customer_id: number | null;
+  lr_number: string | null;
+}
+
+interface Customer {
+  id: number;
+  customer_name: string | null;
+  customer_location: string | null;
+}
+
+interface GPSDetails {
+  shipment_id: number | null;
+  gps_vendor: string | null;
+  gps_frequency: number | null;
+  gps_type: string | null;
+  gps_unit_id: string | null;
+}
+
+interface GPS {
+  trailerNumber: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  gpstimestamp: number | null;
+  timestamp: string | number | null;
+  GPSVendor: string | null;
+}
+
+interface Geofence {
+  location_id: string | null;
+  geofence_name: string | null;
+  time: string | null;
+}
+
+interface UserCustomer {
+  customer_name: string | null;
+}
+
+interface AlertCounts {
+  stoppage: { active: number; inactive: number; manually_closed: number };
+  overspeeding: { active: number; inactive: number; manually_closed: number };
+  continuous_driving: { active: number; inactive: number; manually_closed: number };
+  no_gps_feed: { active: number; inactive: number; manually_closed: number };
+  reached_stop: { active: number; inactive: number; manually_closed: number };
+  geofence: { active: number; inactive: number; manually_closed: number };
+  route_deviation: { active: number; inactive: number; manually_closed: number };
+  [key: string]: { active: number; inactive: number; manually_closed: number };
+}
+
 export async function getAllTrips(
   userId: number,
   page = 1,
@@ -199,177 +321,218 @@ export async function getAllTrips(
 ) {
   try {
     // 1. Get user's vehicle group IDs
-    const userGroups = await db
-      .select({ groupId: user_group.vehicle_group_id })
+    const userGroups: UserGroup[] = await db
+      .select({ vehicle_group_id: user_group.vehicle_group_id })
       .from(user_group)
       .where(eq(user_group.user_id, userId));
     const groupIds = userGroups
-      .map((g) => g.groupId)
-      .filter((id): id is number => id !== null && id !== undefined);
+      .map((g) => g.vehicle_group_id)
+      .filter((id): id is number => id !== null);
 
-    // 2. Get entities under these groups (active only)
-    const groupEntities = await db
-      .select({
-        entityId: group_entity.entity_id,
-        groupId: group_entity.group_id,
-      })
-      .from(group_entity)
-      .where(inArray(group_entity.group_id, groupIds));
-    const entityIds = groupEntities.map((e) => e.entityId).filter(Boolean);
+    // Parallel fetch: group names and group entities
+    const [groupsData, groupEntities]: [Group[], GroupEntity[]] = await Promise.all([
+      db
+        .select({ id: group.id, group_name: group.group_name })
+        .from(group)
+        .where(inArray(group.id, groupIds)),
+      db
+        .select({
+          entity_id: group_entity.entity_id,
+          group_id: group_entity.group_id,
+        })
+        .from(group_entity)
+        .where(inArray(group_entity.group_id, groupIds)),
+    ]);
 
-    const entities = await db
+    const groupNamesMap = new Map(groupsData.map((g) => [g.id, g.group_name ?? ""]));
+    const entityIds = groupEntities.map((e) => e.entity_id).filter((id): id is number => id !== null);
+
+    // Fetch active entities
+    const entities: Entity[] = await db
       .select({
         id: entity.id,
         vehicleNumber: entity.vehicleNumber,
-        vehicle_type: entity.type,
+        type: entity.type,
+        status: entity.status,
       })
       .from(entity)
       .where(and(inArray(entity.id, entityIds), eq(entity.status, true)));
-    const entityMap = new Map(entities.map((e) => [e.vehicleNumber, e]));
+    const entityMap = new Map(entities.map((e) => [e.vehicleNumber ?? "", e]));
 
-    // Create a map of vehicle number to group IDs
+    // Build vehicleGroupMap
     const vehicleGroupMap = new Map<string, number[]>();
     for (const groupEntity of groupEntities) {
-      const entityInfo = entities.find((e) => e.id === groupEntity.entityId);
-      if (entityInfo) {
+      const entityInfo = entities.find((e) => e.id === groupEntity.entity_id);
+      if (entityInfo && entityInfo.vehicleNumber) {
         if (!vehicleGroupMap.has(entityInfo.vehicleNumber)) {
           vehicleGroupMap.set(entityInfo.vehicleNumber, []);
         }
-        vehicleGroupMap
-          .get(entityInfo.vehicleNumber)!
-          .push(groupEntity.groupId);
+        if (groupEntity.group_id !== null) {
+          vehicleGroupMap
+            .get(entityInfo.vehicleNumber)!
+            .push(groupEntity.group_id);
+        }
       }
     }
 
-    // Get group names for the group IDs
-    const groupsData = await db
-      .select({ id: group.id, group_name: group.group_name })
-      .from(group)
-      .where(inArray(group.id, groupIds));
-    const groupNamesMap = new Map(groupsData.map((g) => [g.id, g.group_name]));
-
-    const vehicleNumbers = entities.map((e) => e.vehicleNumber);
+    const vehicleNumbers = entities.map((e) => e.vehicleNumber).filter((vn): vn is string => vn !== null);
 
     // 3. Determine status filter
-    let statusFilter: string[] | null = null; // null means no status filter (show all)
-
+    let statusFilter: string[] | null = null;
     if (!status || status === "active") {
-      // Active means all statuses except inactive
-      statusFilter = ["in_transit", "delivery", "pickup", "Active"]; // Note: keeping 'Active' for backward compatibility
+      statusFilter = ["in_transit", "delivery", "pickup", "Active"];
     } else if (status === "inactive") {
       statusFilter = ["inactive", "Inactive"];
     } else if (status === "all") {
-      // Show all statuses - no filter needed
       statusFilter = null;
     } else {
-      // For specific status like 'intransit', 'delivery', 'pickup'
-      statusFilter = [status, status.charAt(0).toUpperCase() + status.slice(1)]; // Handle case variations
+      statusFilter = [status, status.charAt(0).toUpperCase() + status.slice(1)];
     }
 
     // 4. Determine date range
     let filterStartDate: Date;
     let filterEndDate: Date;
-
     if (startDate && endDate) {
       filterStartDate = startDate;
       filterEndDate = endDate;
     } else {
-      // Default: last 7 days
       filterEndDate = new Date();
       filterStartDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     }
 
-    interface ShipmentIdRow {
-      id: number;
-    }
-
-    // 5. Query shipments with filters
-    let shipmentQuery;
-    if (statusFilter !== null) {
-      shipmentQuery = db
-        .select({ id: shipment.id })
-        .from(shipment)
-        .leftJoin(equipment, eq(equipment.shipment_id, shipment.id))
-        .where(
-          and(
-            inArray(equipment.equipment_id, vehicleNumbers),
-            inArray(shipment.status, statusFilter),
-            gte(shipment.created_at, filterStartDate),
-            lt(
-              shipment.created_at,
-              new Date(filterEndDate.getTime() + 24 * 60 * 60 * 1000)
-            )
+    // 5. Consolidated shipment query with pagination and join to equipment
+    type RawShipment = Omit<Shipment, 'created_at' | 'end_time' | 'start_time'> & {
+      created_at: Date | null;
+      end_time: string | null;
+      start_time: string | null;
+    };
+    const shipmentQuery = db
+      .select({
+        shipment: {
+          id: shipment.id,
+          shipment_id: shipment.shipment_id,
+          route_name: shipment.route_name,
+          domain_name: shipment.domain_name,
+          created_at: shipment.created_at,
+          end_time: shipment.end_time,
+          status: shipment.status,
+          start_location: shipment.start_location,
+          end_location: shipment.end_location,
+          start_latitude: shipment.start_latitude,
+          start_longitude: shipment.start_longitude,
+          end_latitude: shipment.end_latitude,
+          end_longitude: shipment.end_longitude,
+          start_time: shipment.start_time,
+        },
+        equipment: {
+          shipment_id: equipment.shipment_id,
+          equipment_id: equipment.equipment_id,
+          driver_name: equipment.driver_name,
+          driver_mobile_no: equipment.driver_mobile_no,
+          service_provider_alias_value: equipment.service_provider_alias_value,
+          status_duration: equipment.status_duration,
+        },
+      })
+      .from(shipment)
+      .leftJoin(equipment, eq(equipment.shipment_id, shipment.id))
+      .where(
+        and(
+          inArray(equipment.equipment_id, vehicleNumbers),
+          statusFilter ? inArray(shipment.status, statusFilter) : undefined,
+          gte(shipment.created_at, filterStartDate),
+          lt(
+            shipment.created_at,
+            new Date(filterEndDate.getTime() + 24 * 60 * 60 * 1000)
           )
-        );
-    } else {
-      shipmentQuery = db
-        .select({ id: shipment.id })
-        .from(shipment)
-        .leftJoin(equipment, eq(equipment.shipment_id, shipment.id))
-        .where(
-          and(
-            inArray(equipment.equipment_id, vehicleNumbers),
-            gte(shipment.created_at, filterStartDate),
-            lt(
-              shipment.created_at,
-              new Date(filterEndDate.getTime() + 24 * 60 * 60 * 1000)
-            )
-          )
-        );
-    }
-
-    const shipmentIdRows: ShipmentIdRow[] = await shipmentQuery;
-    const shipmentIdsFromVehicles = shipmentIdRows.map((row) => row.id);
-
-    if (shipmentIdsFromVehicles.length === 0) {
-      return [];
-    }
-
-    // Build the final shipment query
-    let finalShipmentQuery;
-    if (statusFilter !== null) {
-      finalShipmentQuery = db
-        .select()
-        .from(shipment)
-        .where(
-          and(
-            inArray(shipment.id, shipmentIdsFromVehicles),
-            inArray(shipment.status, statusFilter)
-          )
-        );
-    } else {
-      finalShipmentQuery = db
-        .select()
-        .from(shipment)
-        .where(inArray(shipment.id, shipmentIdsFromVehicles));
-    }
-
-    const shipments = await finalShipmentQuery
+        )
+      )
       .limit(limit)
       .offset((page - 1) * limit);
 
-    const shipmentIds = shipments.map((s) => s.id); // Get alert counts for these shipments grouped by alert type
-    const alertCounts = await db
-      .select({
-        shipment_id: alert_shipment_relation.shipment_id,
-        alarm_type_id: alarm.alarm_type_id, // Get the actual alarm type ID (1-7)
-        alert_status: alert.status,
-        count: sql<number>`count(*)`.as("count"),
-      })
-      .from(alert_shipment_relation)
-      .leftJoin(alert, eq(alert_shipment_relation.alert_id, alert.id))
-      .leftJoin(alarm, eq(alert.alert_type, alarm.id)) // Join with alarm table to get alarm_type_id
-      .where(
-        inArray(alert_shipment_relation.shipment_id, shipmentIds.map(String))
-      )
-      .groupBy(
-        alert_shipment_relation.shipment_id,
-        alarm.alarm_type_id,
-        alert.status
-      );
+    // Fetch raw data and convert string dates to Date objects
+    const rawShipmentData: { shipment: RawShipment; equipment: Equipment | null }[] = await shipmentQuery;
+    const shipmentData: { shipment: Shipment; equipment: Equipment | null }[] = rawShipmentData.map((d) => ({
+      shipment: {
+        ...d.shipment,
+        end_time: d.shipment.end_time ? new Date(d.shipment.end_time) : null,
+        start_time: d.shipment.start_time ? new Date(d.shipment.start_time) : null,
+      },
+      equipment: d.equipment,
+    }));
 
-    // Define alert type mapping based on alarm_type_id from schema
-    const alertTypeMapping: Record<number, string> = {
+    const shipments = shipmentData.map((d) => d.shipment);
+    const equipmentMap = new Map(
+      shipmentData.map((d) => [d.shipment.id, d.equipment])
+    );
+
+    const shipmentIds = shipments.map((s) => s.id);
+
+    if (shipmentIds.length === 0) {
+      return [];
+    }
+
+    // Determine used vehicle numbers for GPS filtering
+    const usedVehicleNumbers = new Set(
+      shipmentData.map((d) => d.equipment?.equipment_id).filter((id): id is string => id !== null)
+    );
+
+    // Parallel fetch: alert counts, stops, GPS details, GPS rows
+    type RawStop = Omit<Stop, 'entry_time' | 'exit_time' | 'planned_departure_date' | 'created_at' | 'updated_at'> & {
+      entry_time: string | null;
+      exit_time: string | null;
+      planned_departure_date: string | null;
+      created_at: Date | null;
+      updated_at: Date | null;
+    };
+    const [alertCounts, rawStopsRows, gpsDetailsRows, gpsRows]: [
+      AlertCount[],
+      RawStop[],
+      GPSDetails[],
+      GPS[]
+    ] = await Promise.all([
+      db
+        .select({
+          shipment_id: alert_shipment_relation.shipment_id,
+          alarm_type_id: alarm.alarm_type_id,
+          alert_status: alert.status,
+          count: sql<number>`count(*)`.as("count"),
+        })
+        .from(alert_shipment_relation)
+        .leftJoin(alert, eq(alert_shipment_relation.alert_id, alert.id))
+        .leftJoin(alarm, eq(alert.alert_type, alarm.id))
+        .where(
+          inArray(alert_shipment_relation.shipment_id, shipmentIds.map(String))
+        )
+        .groupBy(
+          alert_shipment_relation.shipment_id,
+          alarm.alarm_type_id,
+          alert.status
+        ),
+      db
+        .select()
+        .from(stop)
+        .where(inArray(stop.shipment_id, shipmentIds)),
+      db
+        .select()
+        .from(gps_details)
+        .where(inArray(gps_details.shipment_id, shipmentIds)),
+      db
+        .select()
+        .from(gps_schema)
+        .where(inArray(gps_schema.trailerNumber, Array.from(usedVehicleNumbers))),
+    ]);
+
+    // Convert string dates to Date objects for stops
+    const stopsRows: Stop[] = rawStopsRows.map((s) => ({
+      ...s,
+      entry_time: s.entry_time ? new Date(s.entry_time) : null,
+      exit_time: s.exit_time ? new Date(s.exit_time) : null,
+      planned_departure_date: s.planned_departure_date ? new Date(s.planned_departure_date) : null,
+      updated_at: s.updated_at ? new Date(s.updated_at) : null,
+    }));
+
+    // Build alert counts map
+    const alertTypeMapping: Record<number, keyof AlertCounts> = {
       1: "stoppage",
       2: "overspeeding",
       3: "continuous_driving",
@@ -379,49 +542,9 @@ export async function getAllTrips(
       7: "route_deviation",
     };
 
-    // Create alert counts map grouped by alert type
-    const alertCountsMap: Record<
-      string, // Changed from number to string
-      {
-        stoppage: { active: number; inactive: number; manually_closed: number };
-        overspeeding: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        continuous_driving: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        no_gps_feed: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        reached_stop: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        geofence: { active: number; inactive: number; manually_closed: number };
-        route_deviation: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-        [key: string]: {
-          active: number;
-          inactive: number;
-          manually_closed: number;
-        };
-      }
-    > = {};
-
-    // Initialize alert counts for each shipment with all 7 alert types
+    const alertCountsMap: Record<string, AlertCounts> = {};
     for (const shipmentId of shipmentIds) {
       alertCountsMap[shipmentId.toString()] = {
-        // Convert to string
         stoppage: { active: 0, inactive: 0, manually_closed: 0 },
         overspeeding: { active: 0, inactive: 0, manually_closed: 0 },
         continuous_driving: { active: 0, inactive: 0, manually_closed: 0 },
@@ -432,33 +555,25 @@ export async function getAllTrips(
       };
     }
 
-    // Process alert counts
     for (const alertCount of alertCounts) {
       if (
         alertCount.shipment_id &&
-        alertCount.alarm_type_id &&
+        alertCount.alarm_type_id !== null &&
         alertCount.alert_status !== null
       ) {
-        const shipmentId = alertCount.shipment_id; // This is now a string
+        const shipmentId = alertCount.shipment_id;
         const count = alertCount.count;
-
-        // Get alert type name from mapping
         const alertType = alertTypeMapping[alertCount.alarm_type_id];
 
-        if (
-          alertType &&
-          alertCountsMap[shipmentId] &&
-          alertCountsMap[shipmentId][alertType]
-        ) {
-          // Update counts based on status
+        if (alertType && alertCountsMap[shipmentId]) {
           switch (alertCount.alert_status) {
-            case 1: // Active
+            case 1:
               alertCountsMap[shipmentId][alertType].active = count;
               break;
-            case 0: // Inactive
+            case 0:
               alertCountsMap[shipmentId][alertType].inactive = count;
               break;
-            case 2: // Manually closed
+            case 2:
               alertCountsMap[shipmentId][alertType].manually_closed = count;
               break;
           }
@@ -466,129 +581,144 @@ export async function getAllTrips(
       }
     }
 
-    const equipmentRows = await db
-      .select()
-      .from(equipment)
-      .where(inArray(equipment.shipment_id, shipmentIds));
-    const equipmentMap = new Map(equipmentRows.map((e) => [e.shipment_id, e]));
-
-    // 7. Get all stops for these shipments
-    const stopsRows = await db
-      .select()
-      .from(stop)
-      .where(inArray(stop.shipment_id, shipmentIds));
-    const stopsMap: Record<number, any[]> = {};
+    // Build stopsMap
+    const stopsMap: Record<number, Stop[]> = {};
     for (const stopRow of stopsRows) {
-      if (stopRow.shipment_id !== null && stopRow.shipment_id !== undefined) {
+      if (stopRow.shipment_id !== null) {
         if (!stopsMap[stopRow.shipment_id]) stopsMap[stopRow.shipment_id] = [];
         stopsMap[stopRow.shipment_id].push(stopRow);
       }
     }
-    const avgSpeedKmh = 40; // You can fetch this dynamically if available
 
-    // 8. Get all customer LR details for these stops
-    const stopIds = stopsRows.map((s) => s.id);
-    const customerLRRows = await db
+    // Fetch customer LR details
+    const stopIds = stopsRows.map((s) => s.id).filter((id): id is number => id !== null);
+    const customerLRRows: CustomerLRDetail[] = await db
       .select()
       .from(customer_lr_detail)
       .where(inArray(customer_lr_detail.stop_id, stopIds));
-    const customerLRMap: Record<number, any[]> = {};
+
+    const customerLRMap: Record<number, CustomerLRDetail[]> = {};
     for (const lr of customerLRRows) {
-      if (lr.stop_id !== null && lr.stop_id !== undefined) {
+      if (lr.stop_id !== null) {
         if (!customerLRMap[lr.stop_id]) customerLRMap[lr.stop_id] = [];
         customerLRMap[lr.stop_id].push(lr);
       }
     }
 
-    // 9. Get all customers for these LR details
-    const customerIds = customerLRRows.map((lr) => lr.customer_id);
-    const customersRows = await db
+    // Fetch customers
+    const customerIds = customerLRRows.map((lr) => lr.customer_id).filter((id): id is number => id !== null);
+    const customersRows: Customer[] = await db
       .select()
       .from(customers)
       .where(inArray(customers.id, customerIds));
     const customersMap = new Map(customersRows.map((c) => [c.id, c]));
 
-    // 10. Get GPS details for these shipments
-    const gpsDetailsRows = await db
-      .select()
-      .from(gps_details)
-      .where(inArray(gps_details.shipment_id, shipmentIds));
+    // Build gpsDetailsMap
     const gpsDetailsMap = new Map(
-      gpsDetailsRows.map((g) => [g.shipment_id, g])
+      gpsDetailsRows.map((g) => [g.shipment_id ?? 0, g])
     );
 
-    // 11. Get latest GPS ping for each vehicle
-    const gpsRows = await db
-      .select()
-      .from(gps_schema)
-      .where(inArray(gps_schema.trailerNumber, vehicleNumbers));
-
-    const gpsMap = new Map<string, any>();
+    // Build gpsByVehicle (sorted ascending by timestamp)
+    const gpsByVehicle = new Map<string, GPS[]>();
     for (const row of gpsRows) {
-      if (!row.trailerNumber) continue;
-      const prev = gpsMap.get(row.trailerNumber);
-      if (!prev || (row.timestamp && prev.timestamp < row.timestamp)) {
-        gpsMap.set(row.trailerNumber, row);
+      const tn = row.trailerNumber;
+      if (tn) {
+        if (!gpsByVehicle.has(tn)) gpsByVehicle.set(tn, []);
+        gpsByVehicle.get(tn)!.push(row);
+      }
+    }
+    for (const rows of gpsByVehicle.values()) {
+      rows.sort((a, b) => Number(a.timestamp ?? 0) - Number(b.timestamp ?? 0));
+    }
+
+    // Build gpsMap (latest GPS per vehicle)
+    const gpsMap = new Map<string, GPS>();
+    for (const [tn, rows] of gpsByVehicle) {
+      if (rows.length > 0) {
+        gpsMap.set(tn, rows[rows.length - 1]);
       }
     }
 
-    // 12. Build trips response (rest of the existing logic remains the same)
-    const customerda = await fetchallusercustomers(userId);
-    const daCustomerNames = new Set(customerda.map((c) => c.customer_name));
+    // Batch fetch geofence for all stops
+    const locationIds = new Set(
+      stopsRows.map((s) => s.location_id).filter((id): id is string => id !== null)
+    );
+    const geofenceRows: Geofence[] = await db
+      .select()
+      .from(geofence_table)
+      .where(inArray(geofence_table.location_id, Array.from(locationIds)));
+
+    const geofenceMap = new Map(geofenceRows.map((g) => [g.location_id ?? "", g]));
+
+    const avgSpeedKmh = 40;
+
+    // Fetch user's customers
+    const customerda: UserCustomer[] = await fetchallusercustomers(userId);
+    const daCustomerNames = new Set(customerda.map((c) => c.customer_name ?? ""));
+
+    console.log("✅ User's customers (daCustomerNames):", Array.from(daCustomerNames));
+
+    // Pre-process stops with geofence data
+    const stopMetadata = new Map<number, { loading_unloading_time: string }>();
+    for (const stop of stopsRows) {
+      const geofence = stop.location_id ? geofenceMap.get(stop.location_id) : undefined;
+      const loading_unloading_time = geofence?.time ?? "1h";
+      stopMetadata.set(stop.id, { loading_unloading_time });
+    }
 
     const trips = await Promise.all(
       shipments.map(async (s) => {
-        const equip = equipmentMap.get(s.id) as
-          | (typeof equipmentRows)[number]
-          | undefined;
+        const equip = equipmentMap.get(s.id);
+        const vehicleNumber = equip?.equipment_id ?? "";
+        const latestGps = gpsMap.get(vehicleNumber);
+        const allGpsRecords = gpsByVehicle.get(vehicleNumber) || [];
         const stops = (stopsMap[s.id] || []).sort(
           (a, b) =>
             (a.actual_sequence ?? a.stop_sequence ?? 0) -
             (b.actual_sequence ?? b.stop_sequence ?? 0)
         );
 
-        // Filter: Only include trips where at least one stop's customer_name is in daCustomerNames
+        // Filter by user customers
         const hasUserCustomer = stops.some((stop) => {
           const lrArr = customerLRMap[stop.id] || [];
           return lrArr.some((lr) => {
-            const customer = customersMap.get(lr.customer_id);
-            return customer && daCustomerNames.has(customer.customer_name);
+            const customer = customersMap.get(lr.customer_id ?? 0);
+            return customer && daCustomerNames.has(customer.customer_name ?? "");
           });
         });
+
+        console.log(`Stop IDs for trip ${s.id} passes user customer filter:`, hasUserCustomer);
         if (!hasUserCustomer) return null;
 
-        // Get vehicle groups for this trip's vehicle
-        const vehicleNumber = equip?.equipment_id || "";
+        // Vehicle groups
         const vehicleGroupIds = vehicleGroupMap.get(vehicleNumber) || [];
         const vehicleGroups = vehicleGroupIds.map((groupId) => ({
           group_id: groupId,
-          group_name: groupNamesMap.get(groupId) || "",
+          group_name: groupNamesMap.get(groupId) ?? "",
         }));
 
-        // Build route points for total distance
+        // Total distance
         const routePoints: Array<{ lat: number; lng: number }> = [];
-        if (s.start_latitude != null && s.start_longitude != null) {
+        if (s.start_latitude !== null && s.start_longitude !== null) {
           routePoints.push({
             lat: Number(s.start_latitude),
             lng: Number(s.start_longitude),
           });
         }
         for (const stop of stops) {
-          if (stop.latitude != null && stop.longitude != null) {
+          if (stop.latitude !== null && stop.longitude !== null) {
             routePoints.push({
               lat: Number(stop.latitude),
               lng: Number(stop.longitude),
             });
           }
         }
-        if (s.end_latitude != null && s.end_longitude != null) {
+        if (s.end_latitude !== null && s.end_longitude !== null) {
           routePoints.push({
             lat: Number(s.end_latitude),
             lng: Number(s.end_longitude),
           });
         }
-
-        // Total Distance
         let total_distance = 0;
         for (let i = 1; i < routePoints.length; i++) {
           total_distance += haversine(
@@ -600,32 +730,31 @@ export async function getAllTrips(
         }
         total_distance = total_distance / 1000;
 
-        // Covered Distance
+        // Covered distance
         const coveredPoints: Array<{ lat: number; lng: number }> = [];
-        if (s.start_latitude != null && s.start_longitude != null) {
+        if (s.start_latitude !== null && s.start_longitude !== null) {
           coveredPoints.push({
             lat: Number(s.start_latitude),
             lng: Number(s.start_longitude),
           });
         }
-        const visitedStops = stops.filter((st) => st.entry_time);
+        const visitedStops = stops.filter((st) => st.entry_time !== null);
         for (const stop of visitedStops) {
-          if (stop.latitude != null && stop.longitude != null) {
+          if (stop.latitude !== null && stop.longitude !== null) {
             coveredPoints.push({
               lat: Number(stop.latitude),
               lng: Number(stop.longitude),
             });
           }
         }
-        const currentGps = gpsMap.get(equip?.equipment_id ?? "");
         if (
-          currentGps &&
-          currentGps.latitude != null &&
-          currentGps.longitude != null
+          latestGps &&
+          latestGps.latitude !== null &&
+          latestGps.longitude !== null
         ) {
           coveredPoints.push({
-            lat: Number(currentGps.latitude),
-            lng: Number(currentGps.longitude),
+            lat: Number(latestGps.latitude),
+            lng: Number(latestGps.longitude),
           });
         }
         let covered_distance = 0;
@@ -651,35 +780,30 @@ export async function getAllTrips(
           gps_unit_id: gpsDetailsRow?.gps_unit_id ?? "",
         };
 
-        const entityInfo = entityMap.get(equip?.equipment_id || "");
+        const entityInfo = entityMap.get(vehicleNumber);
 
         let current_location_address = "";
-        let current_location_coordinates: [number, number] | null = null;
+        let current_location_coordinates: [number, number] | string[] | null = null;
         let last_gps_ping = "";
         let vehicle_status = "No Data";
         let last_gps_vendor = "";
 
-        const latestGps = gpsMap.get(equip?.equipment_id ?? "");
-
         if (s.status === "inactive") {
-          // For inactive trips, get the last GPS record before trip ended
           const tripEndTime = s.end_time
             ? new Date(s.end_time).getTime() / 1000
             : Date.now() / 1000;
 
-          // Get all GPS records for this vehicle before trip end time
-          const inactiveGpsRecords = gpsRows
+          const inactiveGpsRecords = allGpsRecords
             .filter(
               (row) =>
-                row.trailerNumber === equip?.equipment_id &&
                 row.gpstimestamp !== null &&
                 Number(row.gpstimestamp) <= tripEndTime
             )
-            .sort((a, b) => Number(b.gpstimestamp) - Number(a.gpstimestamp)); // Sort descending
+            .sort((a, b) => Number(b.gpstimestamp) - Number(a.gpstimestamp));
 
           if (inactiveGpsRecords.length > 0) {
             const lastGpsBeforeInactive = inactiveGpsRecords[0];
-            current_location_coordinates = ["-", "-"] as any; // Show "-" for inactive trips
+            current_location_coordinates = ["-", "-"];
             current_location_address = "-";
             last_gps_ping = lastGpsBeforeInactive.gpstimestamp
               ? formatDate(
@@ -688,10 +812,9 @@ export async function getAllTrips(
                   ).toISOString()
                 )
               : "";
-            last_gps_vendor = lastGpsBeforeInactive.GPSVendor || "";
+            last_gps_vendor = lastGpsBeforeInactive.GPSVendor ?? "";
           } else {
-            // No GPS data found
-            current_location_coordinates = ["-", "-"] as any;
+            current_location_coordinates = ["-", "-"];
             current_location_address = "-";
             last_gps_ping = "";
             last_gps_vendor = "";
@@ -699,8 +822,8 @@ export async function getAllTrips(
         } else {
           if (
             latestGps &&
-            latestGps.latitude != null &&
-            latestGps.longitude != null
+            latestGps.latitude !== null &&
+            latestGps.longitude !== null
           ) {
             current_location_coordinates = [
               Number(latestGps.latitude),
@@ -714,17 +837,16 @@ export async function getAllTrips(
             } catch {
               current_location_address = "";
             }
-            // last_gps_ping=latestGps.timestamp;
             last_gps_ping = latestGps.gpstimestamp
               ? formatDate(
                   new Date(Number(latestGps.gpstimestamp) * 1000).toISOString()
                 )
-              : latestGps.timestamp || "";
-            last_gps_vendor = latestGps.GPSVendor || "";
+              : (latestGps.timestamp ? String(latestGps.timestamp) : "");
+            last_gps_vendor = latestGps.GPSVendor ?? "";
           }
         }
-        // Fix: Only access latestGps.gpstimestamp if latestGps is defined
-        if (latestGps && latestGps.gpstimestamp) {
+
+        if (latestGps && latestGps.gpstimestamp !== null) {
           const now = Date.now();
           const pingTime = Number(latestGps.gpstimestamp) * 1000;
           const diffHours = (now - pingTime) / (1000 * 60 * 60);
@@ -732,14 +854,15 @@ export async function getAllTrips(
         } else {
           vehicle_status = "No Data";
         }
+
         // Per-stop info
         const planned_stops = await Promise.all(
           stops.map(async (stop) => {
             const lrArr = customerLRMap[stop.id] || [];
             const lr = lrArr[0];
-            const customer = lr ? customersMap.get(lr.customer_id) : null;
+            const customer = lr ? customersMap.get(lr.customer_id ?? 0) : null;
             let pickup_location = "";
-            if (stop.latitude && stop.longitude) {
+            if (stop.latitude !== null && stop.longitude !== null) {
               try {
                 pickup_location = await reverseGeocode(
                   Number(stop.latitude),
@@ -749,22 +872,13 @@ export async function getAllTrips(
                 pickup_location = "";
               }
             }
-            let loading_unloading_time = stop.loading_unloading_time || "1h";
-            const [geofence] = await db
-              .select()
-              .from(geofence_table)
-              .where(eq(geofence_table.location_id, stop.location_id))
-              .limit(1);
-            if (geofence && geofence.time)
-              loading_unloading_time = geofence.time;
 
             let status = "Pending";
-            if (stop.exit_time) status = "Complete";
-            else if (stop.entry_time) status = "In Progress";
+            if (stop.exit_time !== null) status = "Complete";
+            else if (stop.entry_time !== null) status = "In Progress";
 
             let detention_time = "";
-
-            if (stop.entry_time && stop.exit_time) {
+            if (stop.entry_time !== null && stop.exit_time !== null) {
               const entry = new Date(stop.entry_time).getTime();
               const exit = new Date(stop.exit_time).getTime();
               const stoppage = stop.detention_time
@@ -778,141 +892,104 @@ export async function getAllTrips(
               );
               detention_time = `${hours}h ${minutes}m`;
             }
-            let gname = "";
-            const loadingtime =
-              stop.location_id != null
-                ? await db
-                    .select()
-                    .from(geofence_table)
-                    .where(eq(geofence_table.location_id, stop.location_id))
-                    .limit(1)
-                : [];
-            for (const stop of stopsRows) {
-              if (loadingtime.length > 0) {
-                gname = loadingtime[0].geofence_name || "";
-              }
-              if (stop.entry_time && stop.exit_time) {
-                stop.ceta = "0";
-                status = "completed";
-                const entryTimeMs = new Date(stop.entry_time).getTime();
-                const exitTimeMs = new Date(stop.exit_time).getTime();
 
-                stop.detention_time = String(
-                  exitTimeMs - entryTimeMs - Number(loadingtime[0]?.time || 1)
+            const geofence = stop.location_id ? geofenceMap.get(stop.location_id) : undefined;
+            const gname = geofence?.geofence_name ?? "";
+            const loading_unloading_time = stopMetadata.get(stop.id)?.loading_unloading_time ?? "1h";
+            const loadingTimeNumber = Number(geofence?.time ?? 1);
+
+            let ceta = "0";
+            if (stop.entry_time !== null && stop.exit_time !== null) {
+              status = "completed";
+              const entryTimeMs = new Date(stop.entry_time).getTime();
+              const exitTimeMs = new Date(stop.exit_time).getTime();
+              detention_time = String(
+                exitTimeMs - entryTimeMs - loadingTimeNumber
+              );
+            } else {
+              if (
+                latestGps &&
+                latestGps.longitude !== null &&
+                latestGps.latitude !== null &&
+                stop.latitude !== null &&
+                stop.longitude !== null &&
+                avgSpeedKmh > 0
+              ) {
+                const distance = haversine(
+                  Number(latestGps.latitude),
+                  Number(latestGps.longitude),
+                  Number(stop.latitude),
+                  Number(stop.longitude)
                 );
-              } else {
-                // Calculate ceta as ETA from current location to stop (in minutes)
-                if (
-                  latestGps &&
-                  latestGps.longitude &&
-                  latestGps.latitude &&
-                  stop.latitude &&
-                  stop.longitude &&
-                  avgSpeedKmh > 0
-                ) {
-                  const distance = haversine(
-                    Number(latestGps.latitude),
-                    Number(latestGps.longitude),
-                    Number(stop.latitude),
-                    Number(stop.longitude)
-                  );
-                  // console.log("Distance to stop:", distance, "km");
-                  const cetaMinutes = Math.round(distance / avgSpeedKmh); // Convert hours to minutes
-                  stop.ceta = cetaMinutes.toString();
+                const cetaMinutes = Math.round(distance / avgSpeedKmh);
+                ceta = cetaMinutes.toString();
 
-                  // Calculate expected arrival time
-                  const now = Date.now();
-                  const expectedArrival = now + cetaMinutes * 60 * 1000;
-                  const plannedTime = stop.planned_departure_date
-                    ? new Date(stop.planned_departure_date).getTime()
-                    : 0;
+                const now = Date.now();
+                const expectedArrival = now + cetaMinutes * 60 * 1000;
+                const plannedTime = stop.planned_departure_date
+                  ? new Date(stop.planned_departure_date).getTime()
+                  : 0;
 
-                  if (plannedTime >= expectedArrival) {
-                    status = "on_time";
-                  } else {
-                    status = "delayed";
-                  }
-                } else {
-                  stop.ceta = "0";
+                if (plannedTime >= expectedArrival) {
                   status = "on_time";
+                } else {
+                  status = "delayed";
                 }
+              } else {
+                status = "on_time";
               }
-
-              // Calculate geta (actual time taken to reach stop, if available)
-              // if (stop.geta) {
-              //   const getaTime = stop.geta ? new Date(stop.geta).getTime() : 0;
-              //   const entryTime = stop.entry_time ? new Date(stop.entry_time).getTime() : 0;
-              //   const geta = Math.round((getaTime - entryTime) / 1000 / 60);
-              //   stop.geta = geta.toString();
-              // } else {
-              //   stop.geta = "0";
-              // }
             }
 
             return {
               planned_stop: stop.stop_sequence,
               location_id: stop.location_id,
-              location_name: customer?.customer_location || "",
+              location_name: customer?.customer_location ?? "",
               pickup_location,
               stop_type: stop.stop_type === "P" ? "Pickup" : "Delivery",
-              lr_number: lr?.lr_number || "",
-              customer_name: customer?.customer_name || "",
+              lr_number: lr?.lr_number ?? "",
+              customer_name: customer?.customer_name ?? "",
               status,
               loading_unloading_time,
-              entry_time: stop.entry_time || "",
-              exit_time: stop.exit_time || "",
-              actual_sequence: stop.actual_sequence || 0,
-              ceta: stop.ceta || "",
+              entry_time: stop.entry_time ?? "",
+              exit_time: stop.exit_time ?? "",
+              actual_sequence: stop.actual_sequence ?? 0,
+              ceta,
               geta: "0",
               detention_time,
-              geofence_name: gname || "",
+              geofence_name: gname,
             };
           })
         );
 
-        const allGpsRecords = gpsRows
-          .filter(
-            (row) =>
-              row.trailerNumber === equip?.equipment_id &&
-              row.timestamp !== null
-          )
-          .sort(
-            (a, b) =>
-              new Date(a.timestamp ?? 0).getTime() -
-              new Date(b.timestamp ?? 0).getTime()
-          )
-          .map((row) => ({
-            ...row,
-            timestamp: row.timestamp as string | number,
-          }));
-
         const totalStoppageMs = calculateTotalStoppageTimeFromGPS(
           allGpsRecords.map((rec) => ({
-            latitude: rec.latitude != null ? Number(rec.latitude) : 0,
-            longitude: rec.longitude != null ? Number(rec.longitude) : 0,
-            timestamp: rec.timestamp,
+            latitude: rec.latitude !== null ? Number(rec.latitude) : 0,
+            longitude: rec.longitude !== null ? Number(rec.longitude) : 0,
+            timestamp: Number(rec.timestamp ?? 0),
           }))
         );
 
-        // Calculate total detention time (exit-entry for all stops + total stoppage)
         const totalDetentionMs = calculateTotalDetentionTime(
-          stops,
+          stops.map((st) => ({
+            ...st,
+            entry_time: st.entry_time ?? undefined,
+            exit_time: st.exit_time ?? undefined,
+            detention_time: st.detention_time ?? undefined,
+          })),
           totalStoppageMs
         );
         const totalDetentionTime = formatMsToHoursMinutes(totalDetentionMs);
 
-        // Calculate status durations
-        // console.log("Calculating status durations from GPS records...");
-
         const statusDurations = calculateStatusDurationsFromGPS(
-          allGpsRecords,
+          allGpsRecords.map((rec) => ({
+            ...rec,
+            timestamp: Number(rec.timestamp ?? 0),
+          })),
           s.start_time ? Math.floor(new Date(s.start_time).getTime() / 1000) : 0
         );
 
-        // Example: Calculate ceta and trip eta for each trip
-
         const stopsForEta = stops
-          .filter((st) => st.latitude && st.longitude)
+          .filter((st) => st.latitude !== null && st.longitude !== null)
           .map((st) => ({
             latitude: Number(st.latitude),
             longitude: Number(st.longitude),
@@ -923,8 +1000,8 @@ export async function getAllTrips(
             ? calculateTripEtaHours(stopsForEta, avgSpeedKmh).toFixed(2) + "h"
             : "";
         const ceta = tripEta;
-        // Determine vehicle/trip status
-        const currentStop = stops.find((st) => st.entry_time && !st.exit_time);
+
+        const currentStop = stops.find((st) => st.entry_time !== null && st.exit_time === null);
         const atStop = !!currentStop;
         const stopType = currentStop?.stop_type === "P" ? "pickup" : "delivery";
         const vehicleTripStatus = getVehicleTripStatus(
@@ -933,43 +1010,41 @@ export async function getAllTrips(
           stopType
         );
 
-        // Calculate total drive time (trip completed time - total stoppage time)
         const totalDriveMs = calculateTotalDriveTime(
-          s.start_time === null ? undefined : s.start_time,
-          s.end_time === null ? undefined : s.end_time,
+          s.start_time ?? undefined,
+          s.end_time ?? undefined,
           totalStoppageMs
         );
         const totalDriveTime = formatMsToHoursMinutes(totalDriveMs);
+
         const startTime = s.start_time ? new Date(s.start_time).getTime() : 0;
         const endTime = s.end_time
           ? new Date(s.end_time).getTime()
           : Date.now();
-
         const tt = endTime - startTime;
 
         return {
-          id: s.shipment_id,
-          route_Name: s.route_name,
-          Domain_Name: s.domain_name,
+          id: s.shipment_id ?? "",
+          route_Name: s.route_name ?? "",
+          Domain_Name: s.domain_name ?? "",
           Start_Time: s.created_at
             ? formatDate(new Date(s.created_at).toISOString())
             : "",
-          End_Time: s.end_time || "",
+          End_Time: s.end_time ?? "",
           total_time: tt ? formatMsToHoursMinutes(Number(tt)) : "0h 0m",
-          driverName: equip?.driver_name || "",
-          driverMobile: equip?.driver_mobile_no || "",
-          serviceProviderAlias: equip?.service_provider_alias_value || "",
-          Vehicle_number: equip?.equipment_id || "",
-          vehicle_type: entityInfo?.vehicle_type || "",
+          driverName: equip?.driver_name ?? "",
+          driverMobile: equip?.driver_mobile_no ?? "",
+          serviceProviderAlias: equip?.service_provider_alias_value ?? "",
+          Vehicle_number: equip?.equipment_id ?? "",
+          vehicle_type: entityInfo?.type ?? "",
           vehicle_groups: vehicleGroups,
           cuurent_location_address:
-            s.status == "inactive" ? "-" : current_location_address,
+            s.status === "inactive" ? "-" : current_location_address,
           current_location_coordindates:
-            s.status == "inactive" ? ["-", "-"] : current_location_coordinates,
+            s.status === "inactive" ? ["-", "-"] : current_location_coordinates,
           last_gps_ping: last_gps_ping,
           last_gps_vendor: last_gps_vendor || "",
           shipment_source: "logifriet",
-
           gps_vendor: gpsDetails.gps_vendor || "",
           gps_frequency: gpsDetails.gps_frequency || "",
           gps_type: gpsDetails.gps_type || "",
@@ -977,12 +1052,12 @@ export async function getAllTrips(
           total_distance: total_distance.toFixed(2) + "km",
           total_covered_distance: covered_distance.toFixed(2) + "km",
           average_distance:
-            typeof tt != "number" || tt === 0
+            typeof tt !== "number" || tt === 0
               ? "0km"
               : (Number(covered_distance) / Number(tt)).toFixed(2) + " km",
-          status: s.status,
-          origin: s.start_location,
-          destination: s.end_location,
+          status: s.status ?? "",
+          origin: s.start_location ?? "",
+          destination: s.end_location ?? "",
           origin_coordinates: [
             s.start_latitude ? Number(s.start_latitude) : 0,
             s.start_longitude ? Number(s.start_longitude) : 0,
@@ -1001,7 +1076,7 @@ export async function getAllTrips(
             stoppage: { active: 0, inactive: 0, manually_closed: 0 },
           },
           Vehicle_status: vehicle_status,
-          status_duration: equip?.status_duration || statusDurations || "0h 0m",
+          status_duration: equip?.status_duration ?? statusDurations ?? "0h 0m",
           total_detention_time: totalDetentionTime,
           total_drive_time: totalDriveTime,
           total_stoppage_time: formatMsToHoursMinutes(totalStoppageMs),
@@ -1010,7 +1085,7 @@ export async function getAllTrips(
       })
     );
 
-    return trips.filter(Boolean);
+    return trips.filter((trip): trip is NonNullable<typeof trips[number]> => trip !== null);
   } catch (error) {
     console.error("❌ Error fetching trips:", error);
     throw new Error("Unable to fetch trip data");
@@ -1032,62 +1107,48 @@ export async function insertTripFromXML() {
 
 //working
 export async function insertData(data: any) {
+  // 1. Check if shipment already exists
   const dt = await db
     .select()
     .from(shipment)
-    .where(
-      eq(shipment.shipment_id, data.TransmissionDetails.Shipment.Shipment_Id)
-    )
+    .where(eq(shipment.shipment_id, data.TransmissionDetails.Shipment.Shipment_Id))
     .limit(1);
-  if (dt.length > 0) {
-    // console.log("Shipment already exists with ID:", data.TransmissionDetails.Shipment.Shipment_Id);
-    return { message: "Shipment already exists" };
-  }
-  //if user is authaticated then only insert the data
+
+  if (dt.length > 0) return { message: "Shipment already exists" };
+
   console.log(data);
+
+  // 2. Fetch user
   const user = await db
     .select()
     .from(usersTable)
     .where(eq(usersTable.username, data.TransmissionHeader.UserName))
     .limit(1);
-  // console.log("User found:", user);
-  if (
-    user.length === 0 ||
-    data.TransmissionHeader.UserName !== user[0].username
-  ) {
+
+  if (user.length === 0 || data.TransmissionHeader.UserName !== user[0].username) {
     console.log("User not found:", data.TransmissionHeader.UserName);
     return { message: "User not found" };
   }
 
-  const authticated = bcrypt.compareSync(
+  const authenticated = await bcrypt.compare(
     data.TransmissionHeader.Password,
     user[0].password
   );
 
-  if (!authticated) {
-    return { message: "User not authenticated" };
-  }
+  if (!authenticated) return { message: "User not authenticated" };
 
-  const checkvechicleexist = await db
+  // 3. Check vehicle existence
+  const vehicleId = data.TransmissionDetails.Shipment.Equipment.Equipment_Id;
+  const checkVehicleExist = await db
     .select()
     .from(entity)
-    .where(
-      eq(
-        entity.vehicleNumber,
-        data.TransmissionDetails.Shipment.Equipment.Equipment_Id
-      )
-    )
+    .where(eq(entity.vehicleNumber, vehicleId))
     .limit(1);
 
-  if (checkvechicleexist.length == 0) {
-    // Vehicle doesn't exist, create it
+  if (checkVehicleExist.length === 0) {
     try {
-      console.log(
-        "Vehicle not found, creating new entity:",
-        data.TransmissionDetails.Shipment.Equipment.Equipment_Id
-      );
+      console.log("Vehicle not found, creating new entity:", vehicleId);
 
-      // Get all active vendors
       const allActiveVendors = await db
         .select()
         .from(vendor)
@@ -1098,26 +1159,25 @@ export async function insertData(data: any) {
         return { message: "No active vendors available to create entity" };
       }
 
-      const vendorIds = allActiveVendors.map((v) => v.id);
+      const vendorIds = allActiveVendors.map((v: any) => v.id);
 
-      // Create entity with default values
       const [insertedEntity] = await db
         .insert(entity)
         .values({
-          vehicleNumber:
-            data.TransmissionDetails.Shipment.Equipment.Equipment_Id,
-          type: "car", // Default type
-          status: true, // Active by default
+          vehicleNumber: vehicleId,
+          type: "car",
+          status: true,
         })
         .$returningId();
 
-      // Create vendor relationships with all active vendors
-      for (const vendorId of vendorIds) {
-        await db.insert(entity_vendor).values({
-          entity_id: insertedEntity.id,
-          vendor_id: vendorId,
-        });
-      }
+      await Promise.all(
+        vendorIds.map((vendorId: any) =>
+          db.insert(entity_vendor).values({
+            entity_id: insertedEntity.id,
+            vendor_id: vendorId,
+          })
+        )
+      );
 
       console.log("Entity created successfully with ID:", insertedEntity.id);
     } catch (entityError) {
@@ -1126,8 +1186,9 @@ export async function insertData(data: any) {
     }
   }
 
+  // 4. Insert transmission header
   const transmissionHeader = data.TransmissionHeader;
-  const TransmissionId = await db
+  const [TransmissionId] = await db
     .insert(transmission_header)
     .values({
       username: transmissionHeader.UserName,
@@ -1136,16 +1197,11 @@ export async function insertData(data: any) {
     })
     .$returningId();
 
-  //fetch the longitude and latitude of the current vehicle from gps_schema latest
+  // 5. Fetch latest GPS location
   const gpsSchema = await db
     .select()
     .from(gps_schema)
-    .where(
-      eq(
-        gps_schema.trailerNumber,
-        data.TransmissionDetails.Shipment.Equipment.Equipment_Id
-      )
-    )
+    .where(eq(gps_schema.trailerNumber, vehicleId))
     .orderBy(desc(gps_schema.timestamp))
     .limit(1);
 
@@ -1158,31 +1214,16 @@ export async function insertData(data: any) {
     );
   }
 
-  // let last_location = "";
-
-  // if (data.TransmissionDetails.Shipment.Stops) {
-  //   const w = data.TransmissionDetails.Shipment.Stops.Stop || [];
-  //   if (w.length > 0) {
-  //     const lastStop = w[w.length - 1];
-  //     if (lastStop.Latitude && lastStop.Longitude) {
-  //       last_location = await reverseGeocode(
-  //         Number(lastStop.Latitude),
-  //         Number(lastStop.Longitude)
-  //       );
-  //     }
-  //   }
-  // }
-
-  // ...existing code continues...
+  // 6. Insert shipment
   const shipmentData = data.TransmissionDetails.Shipment;
   const current_time = new Date().toISOString();
-  const shipmentid = await db
+  const [shipmentid] = await db
     .insert(shipment)
     .values({
       domain_name: shipmentData.Domain_Name,
       shipment_id: shipmentData.Shipment_Id,
       route_name: shipmentData.RouteName,
-      transmission_header_id: Number(TransmissionId[0].id),
+      transmission_header_id: Number(TransmissionId.id),
       status: "in_transit",
       route_id: "",
       route_type: "",
@@ -1197,122 +1238,97 @@ export async function insertData(data: any) {
       total_drive_time: "",
       start_location: current_address || "",
       end_location: "",
-      start_latitude:
-        gpsSchema.length > 0 && gpsSchema[0].latitude != null
-          ? parseFloat(String(gpsSchema[0].latitude))
-          : 0,
-      start_longitude:
-        gpsSchema.length > 0 && gpsSchema[0].longitude != null
-          ? parseFloat(String(gpsSchema[0].longitude))
-          : 0,
+      start_latitude: gpsSchema.length > 0 ? parseFloat(String(gpsSchema[0].latitude)) : 0,
+      start_longitude: gpsSchema.length > 0 ? parseFloat(String(gpsSchema[0].longitude)) : 0,
       end_latitude: 0,
       end_longitude: 0,
     })
     .$returningId();
 
+  // 7. Insert equipment
   const equipmentData = shipmentData.Equipment;
-  const equipmentid = await db
-    .insert(equipment)
-    .values({
-      equipment_id: equipmentData.Equipment_Id,
-      service_provider_alias_value: equipmentData.ServiceProviderAliasValue,
-      driver_name: equipmentData.DriverName,
-      driver_mobile_no: equipmentData.DriverMobileNo,
-      shipment_id: Number(shipmentid[0].id),
-      vehicle_name: "",
-      vehicle_status: "",
-      status_duration: "",
-      driver_details: "",
-      created_at: new Date(),
-      updated_at: new Date(),
-    })
-    .$returningId();
+  await db.insert(equipment).values({
+    equipment_id: equipmentData.Equipment_Id,
+    service_provider_alias_value: equipmentData.ServiceProviderAliasValue,
+    driver_name: equipmentData.DriverName,
+    driver_mobile_no: equipmentData.DriverMobileNo,
+    shipment_id: Number(shipmentid.id),
+    vehicle_name: "",
+    vehicle_status: "",
+    status_duration: "",
+    driver_details: "",
+    created_at: new Date(),
+    updated_at: new Date(),
+  });
 
-  // Insert GPS Details first to check vendor
+  // 8. Insert GPS details
   const gpsDetails = shipmentData.GPSDetails;
-  const gpsDetailsId = await db
-    .insert(gps_details)
-    .values({
-      gps_type: gpsDetails.GPSType,
-      gps_frequency: parseInt(gpsDetails.GPSFrequency, 10),
-      gps_unit_id: gpsDetails.GPSUnitID,
-      gps_vendor: gpsDetails.GPSVendor,
-      shipment_id: Number(shipmentid[0].id),
-      created_at: new Date(),
-      updated_at: new Date(),
-    })
-    .$returningId();
+  await db.insert(gps_details).values({
+    gps_type: gpsDetails.GPSType,
+    gps_frequency: parseInt(gpsDetails.GPSFrequency, 10),
+    gps_unit_id: gpsDetails.GPSUnitID,
+    gps_vendor: gpsDetails.GPSVendor,
+    shipment_id: Number(shipmentid.id),
+    created_at: new Date(),
+    updated_at: new Date(),
+  });
 
-  // Only call Intutrack API if GPS vendor is "Intugine" and driver mobile number exists
   if (gpsDetails.GPSVendor === "Intugine" && equipmentData.DriverMobileNo) {
-    try {
-      await saveIntutrackDetails(equipmentData.DriverMobileNo);
-    } catch (error) {
-      console.warn("Failed to save Intutrack details:", error);
-      // Don't fail the entire trip creation if Intutrack fails
-    }
+    saveIntutrackDetails(equipmentData.DriverMobileNo).catch((error) =>
+      console.warn("Failed to save Intutrack details:", error)
+    );
   }
 
+  // 9. Insert event
   const eventData = shipmentData.Events.Event;
-  const eventid = await db
-    .insert(event)
-    .values({
-      event_code: eventData.EventCode,
-      event_datetime: eventData.EventDateTime,
-      shipment_id: Number(shipmentid[0].id),
-      event_type: "",
-      event_location: "",
-      event_latitude: 0,
-      event_longitude: 0,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })
-    .$returningId();
+  await db.insert(event).values({
+    event_code: eventData.EventCode,
+    event_datetime: eventData.EventDateTime,
+    shipment_id: Number(shipmentid.id),
+    event_type: "",
+    event_location: "",
+    event_latitude: 0,
+    event_longitude: 0,
+    created_at: new Date(),
+    updated_at: new Date(),
+  });
 
+  // 10. Insert stops & customer LR details
   const stops = shipmentData.Stops.Stop || [];
-  for (const st of stops) {
-    const address = await reverseGeocode(
-      Number(st.Latitude),
-      Number(st.Longitude)
-    );
-    // const address = "";
-    //insert only those who are not present
-    const existingGeofence = await db
-      .select()
-      .from(geofence_table)
-      .where(
-        and(
-          eq(geofence_table.location_id, st.Location_Id),
-          eq(geofence_table.stop_type, st.StopType)
-        )
-      )
-      .limit(1);
+  const geofenceInserts: any[] = [];
 
-    const getIndianTime = () => {
-      const now = new Date();
-      const indianTime = new Date(now.getTime() + 5.5 * 60 * 60 * 1000); // Add 5 hours 30 minutes
-      return indianTime;
-    };
+  const indianTime = () => {
+    const now = new Date();
+    return new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+  };
 
-    if (existingGeofence.length === 0) {
-      await db.insert(geofence_table).values({
-        geofence_name: String(st.Location_Id),
-        radius: parseInt(st.GeoFenceRadius, 10) || 0,
-        latitude: parseFloat(st.Latitude),
-        longitude: parseFloat(st.Longitude),
-        location_id: st.Location_Id,
-        created_at: getIndianTime(),
-        updated_at: getIndianTime(),
-        stop_type: st.StopType,
-        geofence_type: 0,
-        status: true,
-        address: address || "",
-      });
-    }
+  await Promise.all(
+    stops.map(async (st: any) => {
+      const address = await reverseGeocode(Number(st.Latitude), Number(st.Longitude));
 
-    const stopId = await db
-      .insert(stop)
-      .values({
+      const existingGeofence = await db
+        .select()
+        .from(geofence_table)
+        .where(and(eq(geofence_table.location_id, st.Location_Id), eq(geofence_table.stop_type, st.StopType)))
+        .limit(1);
+
+      if (existingGeofence.length === 0) {
+        geofenceInserts.push({
+          geofence_name: String(st.Location_Id),
+          radius: parseInt(st.GeoFenceRadius, 10) || 0,
+          latitude: parseFloat(st.Latitude),
+          longitude: parseFloat(st.Longitude),
+          location_id: st.Location_Id,
+          created_at: indianTime(),
+          updated_at: indianTime(),
+          stop_type: st.StopType,
+          geofence_type: 0,
+          status: true,
+          address: address || "",
+        });
+      }
+
+      const [stopId] = await db.insert(stop).values({
         location_id: st.Location_Id,
         stop_type: st.StopType,
         stop_sequence: parseInt(st.StopSequence, 10),
@@ -1320,7 +1336,7 @@ export async function insertData(data: any) {
         longitude: parseFloat(st.Longitude),
         geo_fence_radius: parseInt(st.GeoFenceRadius, 10) || 0,
         planned_departure_date: st.PlannedDepartureDate || "",
-        shipment_id: Number(shipmentid[0].id),
+        shipment_id: Number(shipmentid.id),
         stop_name: "",
         stop_status: "",
         ceta: "",
@@ -1332,49 +1348,49 @@ export async function insertData(data: any) {
         point_number: 0,
         created_at: new Date(),
         updated_at: new Date(),
-      })
-      .$returningId();
+      }).$returningId();
 
-    const customerLRDetails = st.CustomerLRDetails?.CustomerLRDetail || [];
-    const customerLRDetailsArray = Array.isArray(customerLRDetails)
-      ? customerLRDetails
-      : [customerLRDetails];
+      const customerLRDetails = Array.isArray(st.CustomerLRDetails?.CustomerLRDetail)
+        ? st.CustomerLRDetails.CustomerLRDetail
+        : [st.CustomerLRDetails?.CustomerLRDetail];
 
-    for (const lrDetail of customerLRDetailsArray) {
-      // console.log("Inserting Customer LR Detail:", lrDetail);
+      await Promise.all(
+        customerLRDetails.map(async (lrDetail: any) => {
+          if (!lrDetail) return;
 
-      let customerId: number;
-      const existingCustomer = await db
-        .select()
-        .from(customers)
-        .where(eq(customers.customer_id, lrDetail.Customer_ID))
-        .limit(1);
+          const existingCustomer = await db
+            .select()
+            .from(customers)
+            .where(eq(customers.customer_id, lrDetail.Customer_ID))
+            .limit(1);
 
-      if (existingCustomer.length > 0) {
-        customerId = existingCustomer[0].id;
-      } else {
-        const [newCustomer] = await db
-          .insert(customers)
-          .values({
-            customer_id: lrDetail.Customer_ID,
-            customer_name: lrDetail.Customer_Name || "",
-            customer_location: lrDetail.Customer_Location || "",
-          })
-          .$returningId();
+          let customerId: number;
+          if (existingCustomer.length > 0) customerId = existingCustomer[0].id;
+          else {
+            const [newCustomer] = await db.insert(customers).values({
+              customer_id: lrDetail.Customer_ID,
+              customer_name: lrDetail.Customer_Name || "",
+              customer_location: lrDetail.Customer_Location || "",
+            }).$returningId();
+            customerId = newCustomer.id;
+          }
 
-        customerId = newCustomer.id;
-      }
+          await db.insert(customer_lr_detail).values({
+            lr_number: lrDetail.LrNumber || "",
+            customer_id: customerId,
+            stop_id: Number(stopId.id),
+          });
+        })
+      );
+    })
+  );
 
-      await db.insert(customer_lr_detail).values({
-        lr_number: lrDetail.LrNumber || "",
-        customer_id: customerId,
-        stop_id: Number(stopId[0].id),
-      });
-    }
-  }
+  // Bulk insert geofences
+  if (geofenceInserts.length > 0) await db.insert(geofence_table).values(geofenceInserts);
 
   return data;
 }
+
 
 // Helper function to save Intutrack details
 export async function saveIntutrackDetails(phoneNumber: string) {
@@ -2322,6 +2338,12 @@ export async function getTripsByCustomerGroups(
             const lrArr = customerLRMap[stop.id] || [];
             const lr = lrArr[0];
             const customer = lr ? allCustomersMap.get(lr.customer_id) : null;
+
+             if (customer) {
+      console.log(
+        `Stop ID ${stop.id}, LR ID ${lr.id}, Customer Name: "${customer.customer_name}"`
+      );
+    }
 
             let stop_location_address = "";
             if (stop.latitude && stop.longitude) {
