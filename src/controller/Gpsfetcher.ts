@@ -65,7 +65,7 @@ async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
   </TransmissionDetails>`;
 
   try {
-    await axios.post(
+ const logifrightResponse =   await axios.post(
       process.env.ENTER_API_URL!,
       xmlData,
       {
@@ -79,6 +79,7 @@ async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
     
     // Update last notification timestamp
     lastEnRouteNotification.set(vehicleData.trailerNumber, Date.now());
+    console.log('LogifrightResData------', logifrightResponse.data); 
     console.log('🚛 En-Route notification sent for vehicle:', vehicleData.trailerNumber);
   } catch (err: any) {
     console.error('❌ Failed to send En-Route notification:', (err && err.response && err.response.data) || err?.message || err);
@@ -91,25 +92,25 @@ export async function insertGpsData(d: any) {
     // 1. Flatten data
     // const data = JSON.parse(d.toString())
     // const flatData = data.flat();
-    
+
     // if (flatData.length === 0) {
     //   console.log('⚠️ No GPS data to insert.');
     //   return;
     // }
     // return d;
     // console.log("kuch kuch:",d.GPSData);
-  const flatData = Array.isArray(d) ? d : [d];
-  //console.log('Flattened GPS data:', flatData.length);
+    const flatData = Array.isArray(d) ? d : [d];
+    //console.log('Flattened GPS data:', flatData.length);
 
-  if (flatData.length === 0) {
-    console.log('⚠️ No GPS data to insert.');
-    return;
-  }
+    if (flatData.length === 0) {
+      console.log('⚠️ No GPS data to insert.');
+      return;
+    }
+     
+    const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
+    const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
 
-  const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
-  const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
-
-  //console.log(`Processing ${flatData.length} GPS records for ${trailerNumbers.length} trailers and ${gpsVendors.length} vendors.`);
+    //console.log(`Processing ${flatData.length} GPS records for ${trailerNumbers.length} trailers and ${gpsVendors.length} vendors.`);
 
     // 3. Bulk fetch entities and vendors
     const [entities, vendors, equipments] = await Promise.all([
@@ -130,16 +131,16 @@ export async function insertGpsData(d: any) {
       const entity = entityMap.get(v.trailerNumber);
       const vendor = vendorMap.get(v.GPSVendor);
       const equip = equipmentMap.get(v.trailerNumber);
-      
+
       if (!entity || vendor?.status === false) {
         continue; // skip invalid
       }
 
-      //console.log(`Processing GPS data for trailer: ${v.trailerNumber}, Vendor: ${v.GPSVendor}`);
+      // console.log(`Processing GPS data for trailer: ${v.trailerNumber}, Vendor: ${v.GPSVendor}`);
 
       gpsRecordsToInsert.push({
         trailerNumber: v.trailerNumber,
-        timestamp: max(v.gpstimestamp,v.gprstimestamp),
+        timestamp: max(v.gpstimestamp, v.gprstimestamp),
         gpstimestamp: v.timestamp,
         gprstimestamp: v.gprstimestamp,
         longitude: v.longitude,
@@ -152,19 +153,21 @@ export async function insertGpsData(d: any) {
         GPSVendor: v.GPSVendor,
       });
 
-
-
+      console.log("Equipment found for trailer:", v.trailerNumber, equip );
       if (equip?.shipment_id) {
+        // 1. Verify active shipment
+        console.log(' Looking for active shipment:', equip.shipment_id);
         const [activeShipment] = await db
           .select()
           .from(shipment)
           .where(
             and(
-              eq(shipment.status, 'Active'),
-              eq(shipment.shipment_id, String(equip.shipment_id))
+              eq(shipment.status, 'in_transit'),
+              eq(shipment.id, Number(equip.shipment_id))
             )
           )
           .limit(1);
+          console.log(' Active shipment result:', activeShipment);
 
         if (!activeShipment) continue;
 
@@ -176,16 +179,18 @@ export async function insertGpsData(d: any) {
           .limit(1);
 
         const gpsFrequency = gpsDetail?.gps_frequency || 3600; // Default frequency
-
+        console.log(`GPS Frequency for shipment ${activeShipment.shipment_id}: ${gpsFrequency}`);
         // 2. Fetch stops for this active shipment
         const stops = await db.select().from(stop).where(eq(stop.shipment_id, activeShipment.id));
+        console.log(`Fetched ${stops.length} stops for shipment ${activeShipment.shipment_id}`);
 
         // 3. Find the current max actual_sequence for this shipment's stops
         const maxActualSeq = stops.reduce((max, st) => Math.max(max, st.actual_sequence || 0), 0);
 
         let isInsideAnyGeofence = false;
-
+        console.log('Stops for shipment:', activeShipment.shipment_id, stops.length);
         for (const st of stops) {
+          console.log('Processing stop ID:', st.id, 'for trailer:', v.trailerNumber);
           if (st.latitude && st.longitude && st.geo_fence_radius) {
             const dist = haversine(
               Number(v.latitude),
@@ -257,7 +262,8 @@ export async function insertGpsData(d: any) {
               </TransmissionDetails>`;
 
               try {
-                await axios.post(
+                console.log('LogifrightReqData------', xmlData);
+                const logifrightResponse = await axios.post(
                   process.env.ENTER_API_URL!,
                   xmlData,
                   {
@@ -268,6 +274,7 @@ export async function insertGpsData(d: any) {
                     }
                   }
                 );
+                console.log('LogifrightResData------', logifrightResponse.data);
                 console.log('🚚 Vehicle entered geofence, external API notified.');
               } catch (err: any) {
                 console.error('❌ Failed to notify external API:', (err && err.response && err.response.data) || err?.message || err);
@@ -311,7 +318,7 @@ export async function insertGpsData(d: any) {
               </TransmissionDetails>`;
 
               try {
-                await axios.post(
+                const logifrightResponse = await axios.post(
                   process.env.ENTER_API_URL!,
                   xmlData,
                   {
@@ -322,7 +329,7 @@ export async function insertGpsData(d: any) {
                     }
                   }
                 );
-                console.log('🚚 Vehicle exited geofence, external API notified.');
+                console.log('🚚 Vehicle exited geofence, external API notified.',logifrightResponse);
               } catch (err: any) {
                 console.error('❌ Failed to notify external API:', err?.response?.data || err.message);
               }
@@ -336,8 +343,8 @@ export async function insertGpsData(d: any) {
           await sendEnRouteNotification(v, activeShipment);
         }
       }
+     
 
-      
     }
 
     console.log(`Prepared ${gpsRecordsToInsert[0]} valid GPS records for insertion.`);
