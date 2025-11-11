@@ -10,17 +10,20 @@ const db = drizzle(process.env.DATABASE_URL!);
 const lastEnRouteNotification = new Map<string, number>();
 
 // Helper: Haversine distance in meters
-function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const toRad = (v: number) => (v * Math.PI) / 180;
-  const R = 6371000; // meters
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const R = 6371e3;
+  const φ1 = toRad(lat1);
+  const φ2 = toRad(lat2);
+  const Δφ = toRad(lat2 - lat1);
+  const Δλ = toRad(lon2 - lon1);
+
   const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 // Helper: Check if vehicle should send En-Route notification
@@ -59,10 +62,20 @@ async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
         <Stop>
           <Latitude>${vehicleData.latitude}</Latitude>
           <Longitude>${vehicleData.longitude}</Longitude>
+           
         </Stop>
       </Stops>
     </Shipment>
   </TransmissionDetails>`;
+
+ 
+    console.log("🚀 Preparing EN-ROUTE XML Payload...");
+    console.log("🧾 Payload Field Values:");
+
+  
+
+    console.log("📄 XML Payload:\n", xmlData);
+  
 
   try {
  const logifrightResponse =   await axios.post(
@@ -99,6 +112,10 @@ export async function insertGpsData(d: any) {
     // }
     // return d;
     // console.log("kuch kuch:",d.GPSData);
+
+
+    // console.log("🚛 [insertGpsData] RAW GPS DATA RECEIVED:");
+    // console.dir(d, { depth: null });
     const flatData = Array.isArray(d) ? d : [d];
     //console.log('Flattened GPS data:', flatData.length);
 
@@ -261,6 +278,33 @@ export async function insertGpsData(d: any) {
                 </Shipment>
               </TransmissionDetails>`;
 
+
+                //  Check payload fields before sending
+  const fieldChecks = {
+    EventCode: "Vehicle Reached",
+    Domain_Name: domainName,
+    TrailerNumber: v.trailerNumber,
+    GPSVendor: v.GPSVendor,
+    Shipment_Id: activeShipment.shipment_id,
+    Stop_Id: st.location_id || st.id,
+    Latitude: v.latitude,
+    Longitude: v.longitude,
+    
+  };
+
+  const missingFields = Object.entries(fieldChecks)
+    .filter(([_, val]) => val === undefined || val === null || val === "")
+    .map(([key]) => key);
+
+  console.log(" Preparing ENTER (Vehicle Reached) XML Payload...");
+  console.table(fieldChecks);
+  if (missingFields.length > 0) {
+    console.warn(" Missing or empty XML fields:", missingFields.join(", "));
+  } else {
+    console.log(" All XML fields present for ENTER event.");
+  }
+  console.log(" XML Payload:\n", xmlData);
+
               try {
                 console.log('LogifrightReqData------', xmlData);
                 const logifrightResponse = await axios.post(
@@ -316,6 +360,32 @@ export async function insertGpsData(d: any) {
                   </Stops>
                 </Shipment>
               </TransmissionDetails>`;
+
+// 🧠 Check payload fields before sending
+  const fieldChecks = {
+    EventCode: "Vehicle Reached",
+    Domain_Name: domainName,
+    TrailerNumber: v.trailerNumber,
+    GPSVendor: v.GPSVendor,
+    Shipment_Id: activeShipment.shipment_id,
+    Stop_Id: st.location_id || st.id,
+    Latitude: v.latitude,
+    Longitude: v.longitude,
+  
+  };
+
+  const missingFields = Object.entries(fieldChecks)
+    .filter(([_, val]) => val === undefined || val === null || val === "")
+    .map(([key]) => key);
+
+  console.log("🚀 Preparing ENTER (Vehicle Reached) XML Payload...");
+  console.table(fieldChecks);
+  if (missingFields.length > 0) {
+    console.warn("⚠️ Missing or empty XML fields:", missingFields.join(", "));
+  } else {
+    console.log("✅ All XML fields present for ENTER event.");
+  }
+  console.log("📄 XML Payload:\n", xmlData);
 
               try {
                 const logifrightResponse = await axios.post(
