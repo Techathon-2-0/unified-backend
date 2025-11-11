@@ -36,66 +36,126 @@ function shouldSendEnRouteNotification(trailerNumber: string, gpsFrequency: numb
 }
 
 // Helper: Send En-Route notification
-async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
-
-
-  const domainName = activeShipment.domain_name || 'MM/ASOBEXE';
-
-  const xmlData = `<TransmissionDetails>
-    <Shipment>
-      <Domain_Name>MM/ASOBEXE</Domain_Name>
-      <Equipment>
-        <Equipment_Id>${vehicleData.trailerNumber}</Equipment_Id>
-      </Equipment>
-      <Events>
-        <Event>
-          <EventCode>En-Route</EventCode>
-          <EventDateTime>${new Date().toISOString()}</EventDateTime>
-        </Event>
-      </Events>
-      <GPSDetails>
-        <GPSUnitID>${vehicleData.GPSVendor}</GPSUnitID>
-        <GPSVendor>${vehicleData.GPSVendor}</GPSVendor>
-      </GPSDetails>
-      <Shipment_Id>${activeShipment.shipment_id}</Shipment_Id>
-      <Stops>
-        <Stop>
-          <Latitude>${vehicleData.latitude}</Latitude>
-          <Longitude>${vehicleData.longitude}</Longitude>
-           
-        </Stop>
-      </Stops>
-    </Shipment>
-  </TransmissionDetails>`;
-
- 
-    console.log("🚀 Preparing EN-ROUTE XML Payload...");
-    console.log("🧾 Payload Field Values:");
-
-  
-
-    console.log("📄 XML Payload:\n", xmlData);
-  
-
+// ✅ En-Route Notification
+export async function sendEnRouteNotification(vehicleData: any, activeShipment: any) {
   try {
- const logifrightResponse =   await axios.post(
-      process.env.ENTER_API_URL!,
-      xmlData,
-      {
-        headers: {
-          'X-ShipX-API-Key': process.env.ENTER_API_KEY!,
-          'Content-Type': 'application/xml',
-          'Cookie': process.env.ENTER_API_COOKIE!
+    console.log("🚀 Preparing EN-ROUTE XML Payload...");
+
+    // 1️⃣ Fetch all stops for this shipment
+    const stops = await db.select().from(stop).where(eq(stop.shipment_id, activeShipment.id));
+
+    let nearestLocationId = "NA";
+    let nearestStopName = "NA";
+    let nearestStopDist: string | null = null;
+
+    if (stops.length > 0 && vehicleData.latitude && vehicleData.longitude) {
+      // Find nearest stop to current GPS
+      type StopType = (typeof stops)[number] & { dist?: number };
+      const nearestStop: StopType | null = stops.reduce<StopType | null>((closest, st) => {
+        const dist = haversine(
+          Number(vehicleData.latitude),
+          Number(vehicleData.longitude),
+          Number(st.latitude),
+          Number(st.longitude)
+        );
+        if (!closest || dist < (closest.dist ?? Infinity)) {
+          return { ...st, dist };
         }
-      }
-    );
-    
-    // Update last notification timestamp
+        return closest;
+      }, null);
+
+      nearestLocationId = nearestStop?.location_id || nearestStop?.id?.toString() || "NA";
+      nearestStopName = nearestStop?.stop_name || "Unknown Stop";
+      nearestStopDist = nearestStop?.dist?.toFixed(2) || null;
+
+      console.log(
+        `📍 Nearest stop found: ${nearestStopName} (Location ID: ${nearestLocationId}, Distance: ${nearestStopDist} m)`
+      );
+    } else {
+      console.warn("⚠️ No stops found or invalid GPS coordinates for vehicle.");
+    }
+
+    // 2️⃣ Prepare XML payload (include Location_Id like Enter/Exit)
+    const eventDateTime = new Date().toISOString();
+    const domainName = activeShipment.domain_name || "MM/ASOBEXE";
+
+    const xmlData = `<TransmissionDetails>
+      <Shipment>
+        <Domain_Name>${domainName}</Domain_Name>
+        <Equipment>
+          <Equipment_Id>${vehicleData.trailerNumber}</Equipment_Id>
+        </Equipment>
+        <Events>
+          <Event>
+            <EventCode>En-Route</EventCode>
+            <EventDateTime>${eventDateTime}</EventDateTime>
+          </Event>
+        </Events>
+        <GPSDetails>
+          <GPSUnitID>${vehicleData.GPSVendor}</GPSUnitID>
+          <GPSVendor>${vehicleData.GPSVendor}</GPSVendor>
+        </GPSDetails>
+        <Shipment_Id>${activeShipment.shipment_id}</Shipment_Id>
+        <Stops>
+          <Stop>
+            <Latitude>${vehicleData.latitude}</Latitude>
+            <Longitude>${vehicleData.longitude}</Longitude>
+            <Location_Id>${nearestLocationId}</Location_Id>
+          </Stop>
+        </Stops>
+      </Shipment>
+    </TransmissionDetails>`;
+
+    // 3️⃣ Log payload details (for debugging)
+    console.table({
+      EventCode: "En-Route",
+      Domain_Name: domainName,
+      TrailerNumber: vehicleData.trailerNumber,
+      GPSVendor: vehicleData.GPSVendor,
+      Shipment_Id: activeShipment.shipment_id,
+      Latitude: vehicleData.latitude,
+      Longitude: vehicleData.longitude,
+      Location_Id: nearestLocationId,
+      Distance_To_Stop: nearestStopDist,
+      EventDateTime: eventDateTime,
+    });
+
+    const missingFields = Object.entries({
+      Domain_Name: domainName,
+      Equipment_Id: vehicleData.trailerNumber,
+      GPSVendor: vehicleData.GPSVendor,
+      Shipment_Id: activeShipment.shipment_id,
+      Latitude: vehicleData.latitude,
+      Longitude: vehicleData.longitude,
+      Location_Id: nearestLocationId,
+    })
+      .filter(([_, val]) => val === undefined || val === null || val === "")
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
+      console.warn("⚠️ Missing or empty fields in En-Route XML:", missingFields.join(", "));
+    }
+
+    console.log("📄 Final XML Payload:\n", xmlData);
+
+    // 4️⃣ Send XML to API
+    const logifrightResponse = await axios.post(process.env.ENTER_API_URL!, xmlData, {
+      headers: {
+        "X-ShipX-API-Key": process.env.ENTER_API_KEY!,
+        "Content-Type": "application/xml",
+        Cookie: process.env.ENTER_API_COOKIE!,
+      },
+    });
+
+    // 5️⃣ Track last notification timestamp
     lastEnRouteNotification.set(vehicleData.trailerNumber, Date.now());
-    console.log('LogifrightResData------', logifrightResponse.data); 
-    console.log('🚛 En-Route notification sent for vehicle:', vehicleData.trailerNumber);
+    console.log("✅ Logifright Response:", logifrightResponse.data);
+    console.log("🚛 En-Route notification sent for vehicle:", vehicleData.trailerNumber);
   } catch (err: any) {
-    console.error('❌ Failed to send En-Route notification:', (err && err.response && err.response.data) || err?.message || err);
+    console.error(
+      "❌ Failed to send En-Route notification:",
+      err?.response?.data || err?.message || err
+    );
   }
 }
 
