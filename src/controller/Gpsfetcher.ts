@@ -424,7 +424,7 @@ export async function insertGpsData(d: any) {
 
 // 🧠 Check payload fields before sending
   const fieldChecks = {
-    EventCode: "Vehicle Reached",
+    EventCode: "Vehicle Left",
     Domain_Name: domainName,
     TrailerNumber: v.trailerNumber,
     GPSVendor: v.GPSVendor,
@@ -439,14 +439,14 @@ export async function insertGpsData(d: any) {
     .filter(([_, val]) => val === undefined || val === null || val === "")
     .map(([key]) => key);
 
-  console.log("🚀 Preparing ENTER (Vehicle Reached) XML Payload...");
-  console.table(fieldChecks);
-  if (missingFields.length > 0) {
-    console.warn("⚠️ Missing or empty XML fields:", missingFields.join(", "));
-  } else {
-    console.log("✅ All XML fields present for ENTER event.");
-  }
-  console.log("📄 XML Payload:\n", xmlData);
+console.log("🚀 Preparing EXIT (Vehicle Left) XML Payload...");
+console.table(fieldChecks);
+if (missingFields.length > 0) {
+  console.warn("⚠️ Missing or empty XML fields:", missingFields.join(", "));
+} else {
+  console.log("✅ All XML fields present for EXIT event.");
+}
+console.log("📄 XML Payload:\n", xmlData);
 
               try {
                   console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
@@ -461,7 +461,7 @@ export async function insertGpsData(d: any) {
                     }
                   }
                 );
-                console.log('🚚 Vehicle exited geofence, external API notified.',logifrightResponse);
+                console.log('🚚 Vehicle left geofence, external API notified.',logifrightResponse);
               } catch (err: any) {
                 console.error('❌ Failed to notify external API:', err?.response?.data || err.message);
               }
