@@ -174,8 +174,8 @@ export async function insertGpsData(d: any) {
     // console.log("kuch kuch:",d.GPSData);
 
 
-    // console.log("🚛 [insertGpsData] RAW GPS DATA RECEIVED:");
-    // console.dir(d, { depth: null });
+   // console.log("🚛 [insertGpsData] RAW GPS DATA RECEIVED:");
+   // console.dir(d, { depth: null });
     const flatData = Array.isArray(d) ? d : [d];
     //console.log('Flattened GPS data:', flatData.length);
 
@@ -367,6 +367,7 @@ export async function insertGpsData(d: any) {
 
               try {
                 console.log('LogifrightReqData------', xmlData);
+                  console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
                 const logifrightResponse = await axios.post(
                   process.env.ENTER_API_URL!,
                   xmlData,
@@ -402,7 +403,7 @@ export async function insertGpsData(d: any) {
                   </Equipment>
                   <Events>
                     <Event>
-                      <EventCode>Vehicle Exited</EventCode>
+                      <EventCode>Vehicle Left</EventCode>
                       <EventDateTime>${new Date().toISOString()}</EventDateTime>
                     </Event>
                   </Events>
@@ -448,6 +449,7 @@ export async function insertGpsData(d: any) {
   console.log("📄 XML Payload:\n", xmlData);
 
               try {
+                  console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
                 const logifrightResponse = await axios.post(
                   process.env.ENTER_API_URL!,
                   xmlData,
