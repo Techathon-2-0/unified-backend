@@ -26,6 +26,7 @@ import reportRouter from './routes/report';
 import alarmReportRouter from './routes/alarmReport';
 import { authenticateToken } from './middleware/sso';
 import { insertdumpdata } from './controller/Dump';
+import { startListener } from "./rabbitmq/consumer/rabbitmqListner";
 bodyParserXml(bodyParser);
 
 const app = express()
@@ -87,8 +88,9 @@ app.listen(port,async () => {
   try {
     console.log("Server started successfully");
     await insertdumpdata();
-    await GPSConsumer();
-    await GPSProducer();
+    // await GPSConsumer();
+    // await GPSProducer();
+    startListener();
   }
   catch (error) {
     console.error("Error starting server:", error);

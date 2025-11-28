@@ -18,7 +18,9 @@ const topic = process.env.KAFKA_TOPIC!;
 
 export async function GPSConsumer() {
   await consumer.connect();
-  await consumer.subscribe({ topic, fromBeginning: true });
+  await consumer.subscribe({ topic, fromBeginning: false });
+
+   console.log('Kafka consumer connected and subscribed, waiting for new messages...');
 
   await consumer.run({
     eachMessage: async ({ message }: EachMessagePayload) => {
@@ -29,6 +31,8 @@ export async function GPSConsumer() {
           }
         // Parse GPS data
         const data = JSON.parse(message.value!.toString());
+
+        console.log('🛰️ GPS data received:', JSON.stringify(data, null, 2));
         
         // Insert GPS data first
         await insertGpsData(data);

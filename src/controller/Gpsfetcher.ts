@@ -4,6 +4,22 @@ import { transmission_header, shipment, equipment, stop, customer_lr_detail, gps
 import { eq, inArray, and, desc } from "drizzle-orm";
 import axios from "axios";
 
+
+interface GPSData {
+  trailerNumber: string;
+  GPSVendor: string;
+  timestamp: number;
+  gpstimestamp: number;
+  gprstimestamp: number;
+  longitude: number;
+  latitude: number;
+  heading: number;
+  speed: number;
+  numberOfSatellites: string;
+  digitalInput1?: number;
+  internalBatteryLevel?: string;
+}
+
 const db = drizzle(process.env.DATABASE_URL!);
 
 // Store last En-Route notification timestamps per vehicle
@@ -31,7 +47,7 @@ function shouldSendEnRouteNotification(trailerNumber: string, gpsFrequency: numb
   const now = Date.now();
   const lastNotification = lastEnRouteNotification.get(trailerNumber) || 0;
   const intervalMs = (gpsFrequency / 100) * 1000; // Convert frequency to milliseconds (e.g., 3600 -> 36 seconds)
-  
+
   return (now - lastNotification) >= intervalMs;
 }
 
@@ -174,8 +190,8 @@ export async function insertGpsData(d: any) {
     // console.log("kuch kuch:",d.GPSData);
 
 
-   // console.log("🚛 [insertGpsData] RAW GPS DATA RECEIVED:");
-   // console.dir(d, { depth: null });
+    // console.log("🚛 [insertGpsData] RAW GPS DATA RECEIVED:");
+    // console.dir(d, { depth: null });
     const flatData = Array.isArray(d) ? d : [d];
     //console.log('Flattened GPS data:', flatData.length);
 
@@ -183,7 +199,7 @@ export async function insertGpsData(d: any) {
       console.log('⚠️ No GPS data to insert.');
       return;
     }
-     
+
     const trailerNumbers = [...new Set(flatData.map((v: any) => v.trailerNumber as string))];
     const gpsVendors = [...new Set(flatData.map((v: any) => v.GPSVendor))];
 
@@ -230,7 +246,7 @@ export async function insertGpsData(d: any) {
         GPSVendor: v.GPSVendor,
       });
 
-      console.log("Equipment found for trailer:", v.trailerNumber, equip );
+      console.log("Equipment found for trailer:", v.trailerNumber, equip);
       if (equip?.shipment_id) {
         // 1. Verify active shipment
         console.log(' Looking for active shipment:', equip.shipment_id);
@@ -244,7 +260,7 @@ export async function insertGpsData(d: any) {
             )
           )
           .limit(1);
-          console.log(' Active shipment result:', activeShipment);
+        console.log(' Active shipment result:', activeShipment);
 
         if (!activeShipment) continue;
 
@@ -339,35 +355,35 @@ export async function insertGpsData(d: any) {
               </TransmissionDetails>`;
 
 
-                //  Check payload fields before sending
-  const fieldChecks = {
-    EventCode: "Vehicle Reached",
-    Domain_Name: domainName,
-    TrailerNumber: v.trailerNumber,
-    GPSVendor: v.GPSVendor,
-    Shipment_Id: activeShipment.shipment_id,
-    Stop_Id: st.location_id || st.id,
-    Latitude: v.latitude,
-    Longitude: v.longitude,
-    
-  };
+              //  Check payload fields before sending
+              const fieldChecks = {
+                EventCode: "Vehicle Reached",
+                Domain_Name: domainName,
+                TrailerNumber: v.trailerNumber,
+                GPSVendor: v.GPSVendor,
+                Shipment_Id: activeShipment.shipment_id,
+                Stop_Id: st.location_id || st.id,
+                Latitude: v.latitude,
+                Longitude: v.longitude,
 
-  const missingFields = Object.entries(fieldChecks)
-    .filter(([_, val]) => val === undefined || val === null || val === "")
-    .map(([key]) => key);
+              };
 
-  console.log(" Preparing ENTER (Vehicle Reached) XML Payload...");
-  console.table(fieldChecks);
-  if (missingFields.length > 0) {
-    console.warn(" Missing or empty XML fields:", missingFields.join(", "));
-  } else {
-    console.log(" All XML fields present for ENTER event.");
-  }
-  console.log(" XML Payload:\n", xmlData);
+              const missingFields = Object.entries(fieldChecks)
+                .filter(([_, val]) => val === undefined || val === null || val === "")
+                .map(([key]) => key);
+
+              console.log(" Preparing ENTER (Vehicle Reached) XML Payload...");
+              console.table(fieldChecks);
+              if (missingFields.length > 0) {
+                console.warn(" Missing or empty XML fields:", missingFields.join(", "));
+              } else {
+                console.log(" All XML fields present for ENTER event.");
+              }
+              console.log(" XML Payload:\n", xmlData);
 
               try {
                 console.log('LogifrightReqData------', xmlData);
-                  console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
+                console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
                 const logifrightResponse = await axios.post(
                   process.env.ENTER_API_URL!,
                   xmlData,
@@ -422,34 +438,34 @@ export async function insertGpsData(d: any) {
                 </Shipment>
               </TransmissionDetails>`;
 
-// 🧠 Check payload fields before sending
-  const fieldChecks = {
-    EventCode: "Vehicle Left",
-    Domain_Name: domainName,
-    TrailerNumber: v.trailerNumber,
-    GPSVendor: v.GPSVendor,
-    Shipment_Id: activeShipment.shipment_id,
-    Stop_Id: st.location_id || st.id,
-    Latitude: v.latitude,
-    Longitude: v.longitude,
-  
-  };
+              // 🧠 Check payload fields before sending
+              const fieldChecks = {
+                EventCode: "Vehicle Left",
+                Domain_Name: domainName,
+                TrailerNumber: v.trailerNumber,
+                GPSVendor: v.GPSVendor,
+                Shipment_Id: activeShipment.shipment_id,
+                Stop_Id: st.location_id || st.id,
+                Latitude: v.latitude,
+                Longitude: v.longitude,
 
-  const missingFields = Object.entries(fieldChecks)
-    .filter(([_, val]) => val === undefined || val === null || val === "")
-    .map(([key]) => key);
+              };
 
-console.log("🚀 Preparing EXIT (Vehicle Left) XML Payload...");
-console.table(fieldChecks);
-if (missingFields.length > 0) {
-  console.warn("⚠️ Missing or empty XML fields:", missingFields.join(", "));
-} else {
-  console.log("✅ All XML fields present for EXIT event.");
-}
-console.log("📄 XML Payload:\n", xmlData);
+              const missingFields = Object.entries(fieldChecks)
+                .filter(([_, val]) => val === undefined || val === null || val === "")
+                .map(([key]) => key);
+
+              console.log("🚀 Preparing EXIT (Vehicle Left) XML Payload...");
+              console.table(fieldChecks);
+              if (missingFields.length > 0) {
+                console.warn("⚠️ Missing or empty XML fields:", missingFields.join(", "));
+              } else {
+                console.log("✅ All XML fields present for EXIT event.");
+              }
+              console.log("📄 XML Payload:\n", xmlData);
 
               try {
-                  console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
+                console.log("ENTER_API_URL:", process.env.ENTER_API_URL);
                 const logifrightResponse = await axios.post(
                   process.env.ENTER_API_URL!,
                   xmlData,
@@ -461,7 +477,7 @@ console.log("📄 XML Payload:\n", xmlData);
                     }
                   }
                 );
-                console.log('🚚 Vehicle left geofence, external API notified.',logifrightResponse);
+                console.log('🚚 Vehicle left geofence, external API notified.', logifrightResponse);
               } catch (err: any) {
                 console.error('❌ Failed to notify external API:', err?.response?.data || err.message);
               }
@@ -475,7 +491,7 @@ console.log("📄 XML Payload:\n", xmlData);
           await sendEnRouteNotification(v, activeShipment);
         }
       }
-     
+
 
     }
 
@@ -493,20 +509,178 @@ console.log("📄 XML Payload:\n", xmlData);
   }
 }
 
+export async function insertGpsDataNew(flatData: GPSData) {
+  try {
+    if (!flatData) {
+      console.warn('No GPS data to insert.');
+      return;
+    }
+
+    const { trailerNumber, GPSVendor } = flatData;
+
+    // Fetch related entities in parallel
+    const [entityDataArr, vendorDataArr, equipmentDataArr] = await Promise.all([
+      db.select().from(entity).where(eq(entity.vehicleNumber, trailerNumber)).limit(1),
+      db.select().from(vendor).where(eq(vendor.name, GPSVendor)).limit(1),
+      db.select().from(equipment).where(eq(equipment.equipment_id, trailerNumber)).limit(1),
+    ]);
+
+    const entityData = entityDataArr[0];
+    const vendorData = vendorDataArr[0];
+    const quipData = equipmentDataArr[0];
+
+    if (!entityData || vendorData?.status === false) {
+      console.log(`Skipping GPS for trailer ${trailerNumber}: invalid entity/vendor.`);
+      return;
+    }
+
+    const gpsRecord = {
+      trailerNumber,
+      timestamp: Math.max(flatData.gpstimestamp, flatData.gprstimestamp),
+      gpstimestamp: flatData.timestamp,
+      gprstimestamp: flatData.gprstimestamp,
+      longitude: flatData.longitude,
+      latitude: flatData.latitude,
+      heading: flatData.heading,
+      speed: flatData.speed,
+      numberOfSatellites: String(flatData.numberOfSatellites),
+      digitalInput1: flatData.digitalInput1,
+        internalBatteryLevel: flatData.internalBatteryLevel != null 
+    ? String(flatData.internalBatteryLevel) 
+    : null, 
+      GPSVendor,
+    };
+
+    console.log(`Equipment found for trailer ${trailerNumber}:`, quipData);
+
+    if (quipData?.shipment_id) {
+      const [activeShipment] = await db
+        .select()
+        .from(shipment)
+        .where(and(eq(shipment.status, 'in_transit'), eq(shipment.id, Number(quipData.shipment_id))))
+        .limit(1);
+
+      if (!activeShipment) return;
+
+      const [gpsDetail] = await db
+        .select()
+        .from(gps_details)
+        .where(eq(gps_details.shipment_id, activeShipment.id))
+        .limit(1);
+
+      const gpsFrequency = gpsDetail?.gps_frequency || 3600;
+
+      const stops = await db.select().from(stop).where(eq(stop.shipment_id, activeShipment.id));
+      const maxActualSeq = stops.reduce((max, st) => Math.max(max, st.actual_sequence || 0), 0);
+
+      let isInsideAnyGeofence = false;
+
+      for (const st of stops) {
+        if (st.latitude && st.longitude && st.geo_fence_radius) {
+          const dist = haversine(flatData.latitude, flatData.longitude, st.latitude, st.longitude);
+          const inside = dist <= st.geo_fence_radius;
+
+          if (inside) isInsideAnyGeofence = true;
+
+          const lastGps = await db
+            .select()
+            .from(gps_schema)
+            .where(eq(gps_schema.trailerNumber, trailerNumber))
+            .orderBy(desc(gps_schema.timestamp))
+            .limit(1);
+
+          const wasInside =
+            lastGps.length &&
+            lastGps[0].latitude != null &&
+            lastGps[0].longitude != null &&
+            st.latitude != null &&
+            st.longitude != null &&
+            haversine(lastGps[0].latitude, lastGps[0].longitude, st.latitude, st.longitude) <=
+            st.geo_fence_radius!;
+
+
+          const eventType = !wasInside && inside ? 'Vehicle Reached' : wasInside && !inside ? 'Vehicle Left' : null;
+
+          if (eventType) {
+            const updateData =
+              eventType === 'Vehicle Reached'
+                ? { entry_time: new Date().toISOString(), actual_sequence: st.actual_sequence || maxActualSeq + 1 }
+                : { exit_time: new Date().toISOString() };
+
+            await db.update(stop).set(updateData).where(eq(stop.id, st.id));
+
+            const domainName = activeShipment.domain_name || 'MM/ASOBEXE';
+
+            const xmlData = `<TransmissionDetails>
+              <Shipment>
+                <Domain_Name>${domainName}</Domain_Name>
+                <Equipment>
+                  <Equipment_Id>${trailerNumber}</Equipment_Id>
+                </Equipment>
+                <Events>
+                  <Event>
+                    <EventCode>${eventType}</EventCode>
+                    <EventDateTime>${new Date().toISOString()}</EventDateTime>
+                  </Event>
+                </Events>
+                <GPSDetails>
+                  <GPSUnitID>${GPSVendor}</GPSUnitID>
+                  <GPSVendor>${GPSVendor}</GPSVendor>
+                </GPSDetails>
+                <Shipment_Id>${activeShipment.shipment_id}</Shipment_Id>
+                <Stops>
+                  <Stop>
+                    <Latitude>${flatData.latitude}</Latitude>
+                    <Location_Id>${st.location_id || st.id}</Location_Id>
+                    <Longitude>${flatData.longitude}</Longitude>
+                  </Stop>
+                </Stops>
+              </Shipment>
+            </TransmissionDetails>`;
+
+            try {
+              await axios.post(process.env.ENTER_API_URL!, xmlData, {
+                headers: {
+                  'X-ShipX-API-Key': process.env.ENTER_API_KEY!,
+                  'Content-Type': 'application/xml',
+                  'Cookie': process.env.ENTER_API_COOKIE!,
+                },
+              });
+              console.log(`${eventType} event sent for trailer ${trailerNumber}`);
+            } catch (err: any) {
+              console.error('Failed to notify external API:', err?.response?.data || err.message);
+            }
+          }
+        }
+      }
+
+      if (!isInsideAnyGeofence && shouldSendEnRouteNotification(trailerNumber, gpsFrequency)) {
+        await sendEnRouteNotification(flatData, activeShipment);
+      }
+    }
+
+    await db.insert(gps_schema).values(gpsRecord);
+    console.log(`Inserted GPS record for trailer ${trailerNumber}`);
+  } catch (err) {
+    console.error('Error inserting GPS data:', err);
+  }
+}
+
+
 // ...existing code...
 
 export async function fetchGpsDataByTrailerNumber(trailerNumber: string) {
-    try {
-        const gpsData = await db.select().from(gps_schema).where(eq(gps_schema.trailerNumber, trailerNumber));
-        if (gpsData.length === 0) {
-            console.error("No GPS data found for trailer number:", trailerNumber);
-            return [];
-        }
-        return gpsData;
-    } catch (error) {
-        console.error("Error fetching GPS data:", error);
-        throw error;
+  try {
+    const gpsData = await db.select().from(gps_schema).where(eq(gps_schema.trailerNumber, trailerNumber));
+    if (gpsData.length === 0) {
+      console.error("No GPS data found for trailer number:", trailerNumber);
+      return [];
     }
+    return gpsData;
+  } catch (error) {
+    console.error("Error fetching GPS data:", error);
+    throw error;
+  }
 }
 function max(a: any, b: any) {
   // Try to convert both to numbers, fallback to 0 if NaN
