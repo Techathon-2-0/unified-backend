@@ -56,7 +56,7 @@ const kafkaTopic = process.env.KAFKA_TOPIC || 'api-data-topic';
 export async function startListener(): Promise<void> {
   try {
     console.log("Connecting to RabbitMQ...");
-    const connection = await amqp.connect("amqp://guest:guest@unifiedapi.mllqa.com");
+    const connection = await amqp.connect("amqp://guest:guest@10.70.80.22:5672");
     console.log("Connected!");
 
     const channel: Channel = await connection.createChannel();
