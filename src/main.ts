@@ -39,6 +39,7 @@ app.use(bodyParser.xml({
 const allowedOrigins = [
   'http://localhost:5173', // Local dev
   'https://unifiedgps.mlldev.com',
+  'https://unifiedgps.mllqa.com',
 ]
 
 const corsOptions = {
