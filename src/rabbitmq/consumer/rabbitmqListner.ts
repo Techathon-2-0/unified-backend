@@ -1,6 +1,6 @@
 import amqp, { Connection, Channel, ConsumeMessage } from 'amqplib';
 import { Kafka } from 'kafkajs';
-import { insertGpsDataNew } from '../../controller/Gpsfetcher'; 
+import { insertGpsDataNew } from '../../controller/Gpsfetcher';
 
 interface GPSMessage {
   deviceId: string;
@@ -48,7 +48,7 @@ interface GPSMessage {
 
 const kafka = new Kafka({
   clientId: 'api-producer',
-  brokers: ([process.env.KAFKA_BROKERS!||""])
+  brokers: ([process.env.KAFKA_BROKERS! || ""])
 });
 const producer = kafka.producer();
 const kafkaTopic = process.env.KAFKA_TOPIC || 'api-data-topic';
@@ -74,10 +74,12 @@ export async function startListener(): Promise<void> {
       if (!msg) return;
 
       try {
-        const data: GPSMessage = JSON.parse(msg.content.toString());
-        console.log("Received GPS message:", JSON.stringify(data, null, 2));
-        // Simulate processing
+        const raw = JSON.parse(msg.content.toString());
+
+        const data: GPSMessage[] = Array.isArray(raw) ? raw : [raw];
+
         await processMessage(data);
+
         // ✔ Acknowledge after success
         channel.ack(msg);
       } catch (err) {
@@ -98,13 +100,13 @@ async function processMessage(data: GPSMessage[]): Promise<void> {
   try {
     await insertGpsDataNew(data);
     // Push message to Kafka
-   /* await producer.send({
-      topic: kafkaTopic,
-      messages: [
-        { value: JSON.stringify(data) },
-      ],
-    });
-    // console.log(`Pushed trailer ${data.trailerNumber} to Kafka topic ${kafkaTopic}`);*/
+    /* await producer.send({
+       topic: kafkaTopic,
+       messages: [
+         { value: JSON.stringify(data) },
+       ],
+     });
+     // console.log(`Pushed trailer ${data.trailerNumber} to Kafka topic ${kafkaTopic}`);*/
   } catch (err) {
     console.error('Error sending to Kafka:', err);
   }
