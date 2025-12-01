@@ -1,6 +1,6 @@
 import amqp, { Connection, Channel, ConsumeMessage } from 'amqplib';
 import { Kafka } from 'kafkajs';
-import { insertGpsDataNew } from '../../controller/Gpsfetcher';
+import { insertGpsData } from '../../controller/Gpsfetcher';
 
 interface GPSMessage {
   deviceId: string;
@@ -98,7 +98,7 @@ export async function startListener(): Promise<void> {
 // Simulated processing function (replace with your DB/API logic)
 async function processMessage(data: GPSMessage[]): Promise<void> {
   try {
-    await insertGpsDataNew(data);
+    await insertGpsData(data);
     // Push message to Kafka
     /* await producer.send({
        topic: kafkaTopic,
