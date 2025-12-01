@@ -60,7 +60,7 @@ export async function startListener(): Promise<void> {
     console.log("Connected!");
 
     const channel: Channel = await connection.createChannel();
-    const queue = "orderQueue";
+    const queue = "unified.mll.allvendor.gpsQueueBulk";
 
     // Ensure queue exists
     await channel.assertQueue(queue, { durable: true });
