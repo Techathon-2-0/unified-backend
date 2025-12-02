@@ -312,8 +312,15 @@ export async function getLiveData(userid: any, groups: any[] = []): Promise<any>
             speed: gpsData.speed ?? "",
             address: address ?? "",
             altitude: gpsData.altitude ?? "",
-            gpsTime: gpsData.gpstimestamp ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : "",
-            gprsTime: gpsData.gprstimestamp ? formatDate(new Date(gpsData.gprstimestamp * 1000).toISOString()) : "",
+            gpsTime: gpsData.gpstimestamp
+    ? new Date(gpsData.gpstimestamp * 1000)
+        .toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+    : "",
+
+gprsTime: gpsData.gprstimestamp
+    ? new Date(gpsData.gprstimestamp * 1000)
+        .toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+    : "",
             type: ent.type ?? "",
             status: liveStatus,
             distance,
@@ -340,7 +347,10 @@ export async function getLiveData(userid: any, groups: any[] = []): Promise<any>
             trip_status: trip ? trip.status ?? "" : "",
             shipmentSource: "Logifrieght",
             vendorName: vendorName,
-            lastgpstime: gpsData.gpstimestamp ? formatDate(new Date(gpsData.gpstimestamp * 1000).toISOString()) : "",
+           lastgpstime: gpsData.gpstimestamp
+    ? new Date(gpsData.gpstimestamp * 1000)
+        .toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+    : "",
             group: groupNames,
             hasSpeedChart: false,
             lat: usedFastTag ? fastTagLat : (gpsData.latitude ?? ""),
